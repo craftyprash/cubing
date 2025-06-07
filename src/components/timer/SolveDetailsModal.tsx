@@ -18,7 +18,6 @@ interface SolveDetailsModalProps {
   onUpdatePenalty: (id: string, penalty: 'DNF' | '+2' | undefined) => void;
 }
 
-// Modal component to edit/view a solve, including notes and penalties
 const SolveDetailsModal: React.FC<SolveDetailsModalProps> = ({ 
   solve, 
   sessionName,
@@ -31,17 +30,24 @@ const SolveDetailsModal: React.FC<SolveDetailsModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [penalty, setPenalty] = useState<'DNF' | '+2' | undefined>(solve.penalty);
 
+  // Mark modal as having active input when editing notes
+  useEffect(() => {
+    const modalElement = document.querySelector('[data-modal="solve-details"]');
+    if (modalElement) {
+      if (isEditing) {
+        modalElement.setAttribute('data-input-active', 'true');
+      } else {
+        modalElement.removeAttribute('data-input-active');
+      }
+    }
+  }, [isEditing]);
+
   // Allow Escape key to close modal, but prevent spacebar interference when editing notes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle Escape key
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isEditing) {
         onClose();
-      }
-      
-      // Prevent spacebar from being handled by timer when editing notes
-      if (e.code === 'Space' && isEditing) {
-        e.stopPropagation();
       }
     };
 
@@ -55,23 +61,10 @@ const SolveDetailsModal: React.FC<SolveDetailsModalProps> = ({
     setIsEditing(false);
   };
 
-  // Toggle penalty for a solve (DNF or +2)
   const handlePenaltyChange = (newPenalty: 'DNF' | '+2' | undefined) => {
-    // Toggle penalty if clicking the same one
     const updatedPenalty = penalty === newPenalty ? undefined : newPenalty;
     setPenalty(updatedPenalty);
     onUpdatePenalty(solve.id, updatedPenalty);
-  };
-
-  // Handle textarea events to prevent timer interference
-  const handleTextareaKeyDown = (e: React.KeyboardEvent) => {
-    // Stop all keyboard events from propagating to prevent timer interference
-    e.stopPropagation();
-  };
-
-  const handleTextareaKeyUp = (e: React.KeyboardEvent) => {
-    // Stop all keyboard events from propagating to prevent timer interference
-    e.stopPropagation();
   };
 
   const getDisplayTime = () => {
@@ -82,7 +75,10 @@ const SolveDetailsModal: React.FC<SolveDetailsModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-xl max-w-lg w-full p-6">
+      <div 
+        className="bg-gray-800 rounded-xl max-w-lg w-full p-6"
+        data-modal="solve-details"
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">
             Solve Details{sessionName && ` - ${sessionName}`}
@@ -183,8 +179,6 @@ const SolveDetailsModal: React.FC<SolveDetailsModalProps> = ({
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                onKeyDown={handleTextareaKeyDown}
-                onKeyUp={handleTextareaKeyUp}
                 className="w-full h-24 bg-gray-700 border border-gray-600 rounded-lg p-3 text-white resize-none focus:outline-none focus:border-blue-500"
                 placeholder="Add notes about your solve..."
                 autoFocus

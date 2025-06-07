@@ -23,7 +23,6 @@ import { calculateSessionStats, formatTime } from "../utils/timeUtils";
 import { db } from "../db";
 import { Session, Solve, PersonalBest } from "../types";
 
-// Main Training page: connects scramble, session, timer, and personal best logic
 const Training: React.FC = () => {
   const [currentScramble, setCurrentScramble] = useState("");
   const [editingScramble, setEditingScramble] = useState(false);
@@ -38,17 +37,15 @@ const Training: React.FC = () => {
     height: window.innerHeight,
   });
   const scrambleInputRef = useRef<HTMLInputElement>(null);
+  const scrambleContainerRef = useRef<HTMLDivElement>(null);
 
-  // Add a ref to track if a new solve was just added
   const justAddedSolveRef = useRef(false);
   const prevAllSolvesCountRef = useRef(0);
 
-  // Refs for scroll detection
   const timerContainerRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -62,11 +59,9 @@ const Training: React.FC = () => {
     onConfirm: () => {},
   });
 
-  // Fetch current session, all sessions, solves in session, and personal bests using Dexie live hooks
   const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
   const currentSession = useLiveQuery(() => db.getCurrentSession());
   const userSettings = useLiveQuery(() => db.userSettings.get(1));
-  // Add this query to get all solves for best calculation
   const allSolves = useLiveQuery(() => db.solves.toArray()) || [];
   const personalBests = useLiveQuery(() => db.personalBests.toArray()) || [];
   
@@ -83,20 +78,28 @@ const Training: React.FC = () => {
       [currentSession?.id],
     ) || [];
 
-  // Add scroll detection to prevent timer start during scrolling
+  // Mark scramble container as having active input when editing
+  useEffect(() => {
+    if (scrambleContainerRef.current) {
+      if (editingScramble) {
+        scrambleContainerRef.current.setAttribute('data-input-active', 'true');
+      } else {
+        scrambleContainerRef.current.removeAttribute('data-input-active');
+      }
+    }
+  }, [editingScramble]);
+
   useEffect(() => {
     const handleScroll = () => {
       isScrollingRef.current = true;
       
-      // Clear existing timeout
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
       
-      // Set flag to false after scroll ends
       scrollTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false;
-      }, 150); // 150ms after scroll stops
+      }, 150);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -109,28 +112,32 @@ const Training: React.FC = () => {
     };
   }, []);
 
-  // Add global spacebar prevention for the Training page
+  // Global keydown handler for Training page
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Prevent spacebar scrolling globally on the Training page
+      // Only prevent spacebar when:
+      // 1. It's a space key press
+      // 2. We're not editing scramble
+      // 3. No text input is focused
       if (e.code === "Space") {
-        // Only prevent if we're not actively editing the scramble
-        if (!editingScramble) {
+        const activeElement = document.activeElement;
+        const isTextInput = activeElement?.tagName === 'INPUT' || 
+                           activeElement?.tagName === 'TEXTAREA' ||
+                           activeElement?.isContentEditable;
+        
+        if (!editingScramble && !isTextInput) {
           e.preventDefault();
           e.stopPropagation();
         }
       }
     };
 
-    // Use capture phase to intercept events before they reach other elements
     window.addEventListener("keydown", handleGlobalKeyDown, true);
-
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown, true);
     };
   }, [editingScramble]);
 
-  // Get inspection settings for current session
   const getInspectionSettings = () => {
     if (!currentSession || !userSettings) {
       return { useInspection: true, inspectionTime: 15 };
@@ -150,7 +157,6 @@ const Training: React.FC = () => {
     return `${(time / 1000).toFixed(2)}s`;
   };
 
-  // Get formatted display time from a solve
   const getFormattedSolveTime = (solve: Solve | null): string => {
     if (!solve) return "0.00";
     if (solve.penalty === "DNF") return "DNF";
@@ -158,15 +164,12 @@ const Training: React.FC = () => {
     return `${(time / 1000).toFixed(2)}`;
   };
 
-  // Get the last solve from the current session
   const lastSolveTime = useMemo(() => {
     return solves.length > 0 ? getFormattedSolveTime(solves[0]) : "0.00";
-  }, [solves]); // Will update when solves changes (including session changes)
+  }, [solves]);
 
-  // Get current stats
   const currentStats = calculateSessionStats(solves, allSolves);
 
-  // Find the solve that corresponds to the best single
   const bestSingleSolve = useMemo(() => {
     if (!currentStats.bestSingle || !allSolves.length) return null;
     
@@ -176,13 +179,11 @@ const Training: React.FC = () => {
     }) || null;
   }, [currentStats.bestSingle, allSolves]);
 
-  // Get session name for a solve
   const getSessionName = (sessionId: string): string => {
     const session = sessions.find(s => s.id === sessionId);
     return session?.name || "Unknown Session";
   };
 
-  // Update window dimensions on resize for confetti
   useEffect(() => {
     const handleResize = () => {
       setWindowDimensions({
@@ -195,9 +196,7 @@ const Training: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Track all solves count to detect new solves
   useEffect(() => {
-    // Safely get the length
     const currentLength = allSolves?.length || 0;
 
     if (prevAllSolvesCountRef.current < currentLength) {
@@ -208,19 +207,14 @@ const Training: React.FC = () => {
     prevAllSolvesCountRef.current = currentLength;
   }, [allSolves]);
 
-  // Check for new records when stats change
   useEffect(() => {
-    // Only check for records if we just added a solve and there are solves to check
     if (!justAddedSolveRef.current || !allSolves || allSolves.length === 0)
       return;
 
-    // Logic to compare new solve stats against personal bests and update DB if broken
-const checkForNewRecord = async () => {
+    const checkForNewRecord = async () => {
       const solveCount = allSolves.length;
-      // Fetch the latest personal bests from DB to be sure we have the most accurate data
       const currentPersonalBests = await db.personalBests.toArray();
 
-      // Get current best for each category
       const currentPBs: Record<string, number> = {};
       currentPersonalBests.forEach((pb) => {
         if (!currentPBs[pb.type] || pb.time < currentPBs[pb.type]) {
@@ -230,7 +224,6 @@ const checkForNewRecord = async () => {
 
       const newRecords = [];
 
-      // Check single only after 5 solves
       if (
         solveCount >= 5 &&
         currentStats.bestSingle &&
@@ -241,7 +234,6 @@ const checkForNewRecord = async () => {
         await savePersonalBest("single", currentStats.bestSingle);
       }
 
-      // Check ao5
       if (
         solveCount >= 5 &&
         currentStats.bestAo5 &&
@@ -251,7 +243,6 @@ const checkForNewRecord = async () => {
         await savePersonalBest("ao5", currentStats.bestAo5);
       }
 
-      // Check ao12
       if (
         solveCount >= 12 &&
         currentStats.bestAo12 &&
@@ -261,7 +252,6 @@ const checkForNewRecord = async () => {
         await savePersonalBest("ao12", currentStats.bestAo12);
       }
 
-      // Check ao50
       if (
         solveCount >= 50 &&
         currentStats.bestAo50 &&
@@ -271,7 +261,6 @@ const checkForNewRecord = async () => {
         await savePersonalBest("ao50", currentStats.bestAo50);
       }
 
-      // Check ao100
       if (
         solveCount >= 100 &&
         currentStats.bestAo100 &&
@@ -281,7 +270,6 @@ const checkForNewRecord = async () => {
         await savePersonalBest("ao100", currentStats.bestAo100);
       }
 
-      // Show confetti if any record was broken
       if (newRecords.length > 0) {
         setNewRecord(newRecords.join(", "));
         setShowConfetti(true);
@@ -293,7 +281,6 @@ const checkForNewRecord = async () => {
     };
 
     checkForNewRecord();
-    // Reset the flag after checking
     justAddedSolveRef.current = false;
   }, [currentStats, allSolves]);
 
@@ -357,7 +344,6 @@ const checkForNewRecord = async () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       solveCount: 0,
-      // Initialize with current global settings
       useInspection: userSettings.useInspectionTime,
       inspectionTime: userSettings.inspectionTime,
     };
@@ -366,7 +352,6 @@ const checkForNewRecord = async () => {
     await handleSessionChange(sessionId);
   };
 
-  // Show confirmation modal for session deletion
   const showDeleteSessionConfirmation = (sessionId: string, sessionName: string) => {
     if (sessions.length <= 1) {
       setConfirmModal({
@@ -393,13 +378,11 @@ const checkForNewRecord = async () => {
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      // If we're deleting the current session, switch to default first
       if (currentSession?.id === sessionId) {
         console.log("Switching to default session before deletion");
         await db.setCurrentSession("default");
       }
 
-      // Now delete the session and its solves
       console.log("Deleting session:", sessionId);
       await db.transaction("rw", db.sessions, db.solves, async () => {
         await db.solves.where("sessionId").equals(sessionId).delete();
@@ -453,15 +436,13 @@ const checkForNewRecord = async () => {
     }
   };
 
-  // New function to handle retrying a solve with its scramble
   const handleRetrySolve = (solve: Solve) => {
     setCurrentScramble(solve.scramble);
     setShowScramble(true);
     setEditingScramble(false);
   };
 
-  // Save a new solve in the DB, update session metadata, and trigger record check
-const handleSolveComplete = async (time: number) => {
+  const handleSolveComplete = async (time: number) => {
     if (!currentSession) return;
 
     const roundedTime = Math.round(time / 10) * 10;
@@ -475,17 +456,14 @@ const handleSolveComplete = async (time: number) => {
 
     try {
       await db.transaction("rw", db.solves, db.sessions, async () => {
-        // Add the new solve
         await db.solves.add(newSolve);
 
-        // Update session
         await db.sessions.update(currentSession.id, {
           solveCount: (currentSession.solveCount || 0) + 1,
           updatedAt: new Date(),
         });
       });
 
-      // Set the flag that we just added a solve - will trigger record check
       justAddedSolveRef.current = true;
     } catch (error) {
       console.error("Failed to save solve:", error);
@@ -494,7 +472,6 @@ const handleSolveComplete = async (time: number) => {
     generateNewScramble();
   };
 
-  // Show confirmation modal for solve deletion
   const showDeleteSolveConfirmation = (solveId: number) => {
     setConfirmModal({
       isOpen: true,
@@ -520,7 +497,6 @@ const handleSolveComplete = async (time: number) => {
     });
   };
 
-  // Show confirmation modal for clearing all solves
   const showClearAllSolvesConfirmation = () => {
     setConfirmModal({
       isOpen: true,
@@ -557,14 +533,12 @@ const handleSolveComplete = async (time: number) => {
     await db.solves.update(solveId, { penalty });
   };
 
-  // Handle clicking on best single
   const handleBestSingleClick = () => {
     if (bestSingleSolve) {
       setSelectedSolve(bestSingleSolve);
     }
   };
 
-  // Handle inspection settings change
   const handleInspectionToggle = async (newUseInspection: boolean) => {
     if (!currentSession) return;
 
@@ -587,7 +561,6 @@ const handleSolveComplete = async (time: number) => {
     generateNewScramble();
   }, []);
 
-  // Debug log to verify the values are changing
   useEffect(() => {
     console.log("Session changed or solves updated:", {
       sessionId: currentSession?.id,
@@ -596,7 +569,6 @@ const handleSolveComplete = async (time: number) => {
     });
   }, [currentSession?.id, solves.length, lastSolveTime]);
 
-  // Show the most recent solve for "Latest Single" in Current section
   const latestSingle =
     solves.length > 0
       ? solves[0].penalty === "DNF"
@@ -651,7 +623,7 @@ const handleSolveComplete = async (time: number) => {
                 }}
               />
 
-              <div className="bg-gray-800 rounded-lg p-6">
+              <div className="bg-gray-800 rounded-lg p-6" ref={scrambleContainerRef}>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-medium">Scramble</h2>
                   <div className="flex items-center gap-2">
@@ -727,7 +699,6 @@ const handleSolveComplete = async (time: number) => {
               onInspectionToggle={handleInspectionToggle}
               onInspectionTimeChange={handleInspectionTimeChange}
               initialDisplayTime={lastSolveTime}
-              isScrolling={isScrollingRef.current}
             />
           </div>
         </div>
@@ -825,7 +796,6 @@ const handleSolveComplete = async (time: number) => {
                       </div>
                     </div>
                     <div>
-                      
                       <div className="text-xs text-gray-400">ao12</div>
                       <div className="font-mono">
                         {currentStats.bestAo12 === null

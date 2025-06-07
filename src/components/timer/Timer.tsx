@@ -1,50 +1,3 @@
-/**
- * Timer.tsx - Main Timer Component for Full Solve Practice
- * 
- * This is the core timer component used for full speedcube solve practice.
- * It handles inspection time, precise timing, keyboard/touch controls, and
- * integrates with session management and statistics tracking.
- * 
- * Key Features:
- * - Inspection time support (8s, 15s, 30s)
- * - Precise timing with centisecond accuracy
- * - Keyboard (spacebar) and touch controls
- * - Anti-accidental stop protection
- * - Visual state feedback
- * - Settings panel for customization
- * 
- * Timer States:
- * - IDLE: Initial state, ready to start
- * - READY: User holding spacebar/touch (red background)
- * - INSPECTION: 15s inspection countdown (yellow background)
- * - INSPECTION_READY: Ready to start after inspection (red background)
- * - RUNNING: Timer actively running (green background)
- * - STOPPED: Timer stopped, showing final time (blue background)
- * 
- * Controls:
- * - Spacebar/Touch: Hold 0.25s to start, tap to stop
- * - Escape: Cancel timer without recording solve
- * - Settings button: Configure inspection time and enable/disable inspection
- * 
- * Props:
- * - onComplete: Callback when solve is completed with time in milliseconds
- * - inspectionTime: Inspection duration in seconds (8, 15, or 30)
- * - useInspection: Whether inspection is enabled
- * - isFullSolve: Flag indicating this is for full solve practice
- * - onTimerStateChange: Callback for timer state changes
- * - onInspectionToggle: Callback when inspection is toggled
- * - onInspectionTimeChange: Callback when inspection time changes
- * - initialDisplayTime: Initial time to display (for showing last solve)
- * 
- * Technical Implementation:
- * - Uses React hooks for state management
- * - Implements precise timing with Date.now() and setInterval
- * - Prevents default browser behaviors (scrolling, text selection)
- * - Uses event capture phase to intercept keyboard events
- * - Implements touch-action: none for mobile compatibility
- * - Excludes settings buttons from timer touch events using data attributes
- */
-
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Clock, Settings } from "lucide-react";
 
@@ -59,7 +12,6 @@ interface TimerProps {
   initialDisplayTime?: string;
 }
 
-// TimerState enum defines various states of the timer UI and logic lifecycle
 enum TimerState {
   IDLE = "idle",
   READY = "ready",
@@ -69,7 +21,6 @@ enum TimerState {
   STOPPED = "stopped",
 }
 
-// Main Timer component for holding, inspection, running, stopping, and cooldown logic
 const Timer: React.FC<TimerProps> = ({
   onComplete,
   inspectionTime = 15,
@@ -93,34 +44,30 @@ const Timer: React.FC<TimerProps> = ({
   const [useInspection, setUseInspection] = useState(initialUseInspection);
   const [showSettings, setShowSettings] = useState(false);
   const lastStopTimeRef = useRef<number>(0);
-  const COOLDOWN_PERIOD = 500; // 500ms cooldown after stopping
-  const HOLD_DURATION = 250; // Changed from 500ms to 250ms
+  const COOLDOWN_PERIOD = 500;
+  const HOLD_DURATION = 250;
 
-  // Touch handling refs
   const isHoldingRef = useRef(false);
   const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Add useEffect to update displayTime when initialDisplayTime changes
   useEffect(() => {
     if (timerState === TimerState.IDLE || timerState === TimerState.STOPPED) {
       setDisplayTime(initialDisplayTime);
     }
   }, [initialDisplayTime, timerState]);
 
-  // Update useInspection when prop changes
   useEffect(() => {
     setUseInspection(initialUseInspection);
   }, [initialUseInspection]);
 
-  // Central method to update timer state and inform parent via callback
-const updateTimerState = (newState: TimerState) => {
+  const updateTimerState = (newState: TimerState) => {
     setTimerState(newState);
     onTimerStateChange?.(newState);
   };
 
   const getDisplayText = () => {
     if (timerState === TimerState.IDLE) {
-      return displayTime; // Use displayTime instead of hardcoded "0.00"
+      return displayTime;
     } else if (
       timerState === TimerState.READY ||
       timerState === TimerState.INSPECTION_READY
@@ -134,11 +81,10 @@ const updateTimerState = (newState: TimerState) => {
     ) {
       return displayTime;
     }
-    return displayTime; // Use displayTime as default
+    return displayTime;
   };
 
   const formatDisplayTime = (ms: number): string => {
-    // Round to 2 decimal places (centiseconds)
     const roundedMs = Math.round(ms / 10) * 10;
     const seconds = Math.floor(roundedMs / 1000);
     const milliseconds = Math.floor((roundedMs % 1000) / 10);
@@ -169,32 +115,32 @@ const updateTimerState = (newState: TimerState) => {
       const elapsed = endTime - startTime;
       setDisplayTime(formatDisplayTime(elapsed));
       onComplete(elapsed);
-      lastStopTimeRef.current = Date.now(); // Record when we stopped
+      lastStopTimeRef.current = Date.now();
     }
   };
 
-  // New function to cancel the timer without recording
   const cancelTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval);
       setTimerInterval(null);
     }
     
-    // Reset to idle state without calling onComplete
     updateTimerState(TimerState.IDLE);
     setStartTime(null);
     setDisplayTime(initialDisplayTime);
     setInspectionTimeLeft(inspectionTime);
+    setTouchStartTime(null);
+    isHoldingRef.current = false;
   };
 
-  // Called on initial touch/space press, handles transitions into inspection or ready state
-const handleTouchStart = () => {
-    // Check if we're within the cooldown period after stopping
+  // Unified trigger functions
+  const triggerStartAction = () => {
+    // Check cooldown period
     if (
       timerState === TimerState.STOPPED &&
       Date.now() - lastStopTimeRef.current < COOLDOWN_PERIOD
     ) {
-      return; // Ignore input during cooldown
+      return;
     }
 
     if (timerState === TimerState.RUNNING) {
@@ -217,8 +163,7 @@ const handleTouchStart = () => {
     }
   };
 
-  // Called when user lifts touch or releases spacebar, confirms if hold was long enough to begin
-const handleTouchEnd = () => {
+  const triggerEndAction = () => {
     if (!touchStartTime) return;
 
     const holdDuration = Date.now() - touchStartTime;
@@ -242,86 +187,23 @@ const handleTouchEnd = () => {
     setTouchStartTime(null);
   };
 
-  // Touch event handlers for the entire timer area
-  const handleTimerAreaTouchStart = useCallback((e: React.TouchEvent) => {
-    // Check if the touch target is one of the excluded buttons
-    const target = e.target as HTMLElement;
-    const isExcludedButton = target.closest('[data-timer-exclude]');
-    
-    if (isExcludedButton) {
-      return; // Don't handle timer events for excluded buttons
-    }
-
-    e.preventDefault(); // Prevent text selection and scrolling
-    e.stopPropagation(); // Prevent event bubbling
-    isHoldingRef.current = true;
-    handleTouchStart();
-  }, [timerState, useInspection, inspectionTime]);
-
-  const handleTimerAreaTouchEnd = useCallback((e: React.TouchEvent) => {
-    // Check if the touch target is one of the excluded buttons
-    const target = e.target as HTMLElement;
-    const isExcludedButton = target.closest('[data-timer-exclude]');
-    
-    if (isExcludedButton) {
-      return; // Don't handle timer events for excluded buttons
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-    isHoldingRef.current = false;
-    if (holdTimeoutRef.current) {
-      clearTimeout(holdTimeoutRef.current);
-      holdTimeoutRef.current = null;
-    }
-    handleTouchEnd();
-  }, [timerState, touchStartTime]);
-
-  // Mouse event handlers for the entire timer area (for desktop)
-  const handleTimerAreaMouseDown = useCallback((e: React.MouseEvent) => {
-    // Check if the mouse target is one of the excluded buttons
-    const target = e.target as HTMLElement;
-    const isExcludedButton = target.closest('[data-timer-exclude]');
-    
-    if (isExcludedButton) {
-      return; // Don't handle timer events for excluded buttons
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-    isHoldingRef.current = true;
-    handleTouchStart();
-  }, [timerState, useInspection, inspectionTime]);
-
-  const handleTimerAreaMouseUp = useCallback((e: React.MouseEvent) => {
-    // Check if the mouse target is one of the excluded buttons
-    const target = e.target as HTMLElement;
-    const isExcludedButton = target.closest('[data-timer-exclude]');
-    
-    if (isExcludedButton) {
-      return; // Don't handle timer events for excluded buttons
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-    isHoldingRef.current = false;
-    if (holdTimeoutRef.current) {
-      clearTimeout(holdTimeoutRef.current);
-      holdTimeoutRef.current = null;
-    }
-    handleTouchEnd();
-  }, [timerState, touchStartTime]);
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.code === "Space" && !e.repeat) {
-        e.preventDefault(); // Prevent default spacebar behavior (scrolling)
-        e.stopPropagation(); // Stop event from bubbling up
-        handleTouchStart();
+      const activeElement = document.activeElement;
+      const isTextInput = activeElement?.tagName === 'INPUT' || 
+                         activeElement?.tagName === 'TEXTAREA' ||
+                         activeElement?.isContentEditable;
+
+      if (e.code === "Space" && !e.repeat && !isTextInput) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isHoldingRef.current) {
+          isHoldingRef.current = true;
+          triggerStartAction();
+        }
       } else if (e.code === "Escape") {
         e.preventDefault();
         if (timerState === TimerState.RUNNING) {
-          // Cancel the timer without recording the solve
           cancelTimer();
         } else if (
           timerState === TimerState.READY ||
@@ -329,22 +211,95 @@ const handleTouchEnd = () => {
           timerState === TimerState.INSPECTION
         ) {
           updateTimerState(TimerState.IDLE);
+          isHoldingRef.current = false;
         }
       }
     },
-    [timerState, useInspection, inspectionTime, initialDisplayTime],
+    [timerState, useInspection, inspectionTime],
   );
 
   const handleKeyUp = useCallback(
     (e: KeyboardEvent) => {
-      if (e.code === "Space") {
-        e.preventDefault(); // Prevent default spacebar behavior
-        e.stopPropagation(); // Stop event from bubbling up
-        handleTouchEnd();
+      const activeElement = document.activeElement;
+      const isTextInput = activeElement?.tagName === 'INPUT' || 
+                         activeElement?.tagName === 'TEXTAREA' ||
+                         activeElement?.isContentEditable;
+
+      if (e.code === "Space" && !isTextInput) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isHoldingRef.current) {
+          isHoldingRef.current = false;
+          triggerEndAction();
+        }
       }
     },
     [timerState, touchStartTime],
   );
+
+  const handleTimerAreaTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const isExcludedButton = target.closest('[data-timer-exclude]');
+    
+    if (isExcludedButton) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    isHoldingRef.current = true;
+    triggerStartAction();
+  }, [timerState, useInspection, inspectionTime]);
+
+  const handleTimerAreaTouchEnd = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const isExcludedButton = target.closest('[data-timer-exclude]');
+    
+    if (isExcludedButton) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    isHoldingRef.current = false;
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    triggerEndAction();
+  }, [timerState, touchStartTime]);
+
+  const handleTimerAreaMouseDown = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const isExcludedButton = target.closest('[data-timer-exclude]');
+    
+    if (isExcludedButton) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    isHoldingRef.current = true;
+    triggerStartAction();
+  }, [timerState, useInspection, inspectionTime]);
+
+  const handleTimerAreaMouseUp = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const isExcludedButton = target.closest('[data-timer-exclude]');
+    
+    if (isExcludedButton) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    isHoldingRef.current = false;
+    if (holdTimeoutRef.current) {
+      clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    triggerEndAction();
+  }, [timerState, touchStartTime]);
 
   useEffect(() => {
     let inspectionInterval: NodeJS.Timeout | undefined;
@@ -354,6 +309,7 @@ const handleTouchEnd = () => {
         setInspectionTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(inspectionInterval);
+            isHoldingRef.current = false; // Reset holding state
             updateTimerState(TimerState.IDLE);
             return inspectionTime;
           }
@@ -368,7 +324,7 @@ const handleTouchEnd = () => {
   }, [timerState, inspectionTime]);
 
   useEffect(() => {
-    // Use capture phase to intercept events before they reach other elements
+    // Use capture phase to intercept events before they reach other handlers
     window.addEventListener("keydown", handleKeyDown, true);
     window.addEventListener("keyup", handleKeyUp, true);
 
@@ -443,7 +399,7 @@ const handleTouchEnd = () => {
           onTouchEnd={handleTimerAreaTouchEnd}
           onMouseDown={handleTimerAreaMouseDown}
           onMouseUp={handleTimerAreaMouseUp}
-          style={{ touchAction: 'none' }} // Prevent default touch behaviors
+          style={{ touchAction: 'none' }}
         >
           <div className="text-center">
             <div className="font-mono text-6xl md:text-8xl font-bold mb-6 text-white select-none">
@@ -461,12 +417,12 @@ const handleTouchEnd = () => {
           onTouchEnd={handleTimerAreaTouchEnd}
           onMouseDown={handleTimerAreaMouseDown}
           onMouseUp={handleTimerAreaMouseUp}
-          style={{ touchAction: 'none' }} // Prevent default touch behaviors
+          style={{ touchAction: 'none' }}
         >
           {timerState !== TimerState.RUNNING && (
             <div className="absolute top-4 right-4 flex items-center gap-2">
               <button
-                data-timer-exclude="true" // Mark as excluded from timer events
+                data-timer-exclude="true"
                 onClick={handleInspectionToggle}
                 className={`p-2 rounded-lg transition-colors ${
                   useInspection ? "text-white bg-blue-600" : "text-gray-400 hover:text-white"
@@ -476,7 +432,7 @@ const handleTouchEnd = () => {
                 <Clock className="h-6 w-6" />
               </button>
               <button
-                data-timer-exclude="true" // Mark as excluded from timer events
+                data-timer-exclude="true"
                 onClick={() => setShowSettings(!showSettings)}
                 className="p-2 rounded-lg text-gray-400 hover:text-white transition-colors"
                 title="Timer Settings"
@@ -488,7 +444,7 @@ const handleTouchEnd = () => {
 
           {showSettings && (
             <div 
-              data-timer-exclude="true" // Mark as excluded from timer events
+              data-timer-exclude="true"
               className="absolute top-16 right-4 bg-gray-700 rounded-lg p-4 shadow-lg z-10"
             >
               <div className="space-y-4 min-w-[200px]">

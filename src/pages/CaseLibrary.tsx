@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Star, Edit2, Clock, Hash, RotateCcw } from "lucide-react";
 import { CubeCase, CubeStage, Algorithm } from "../types";
@@ -39,19 +39,42 @@ const CaseLibrary: React.FC = () => {
   const favorites = useLiveQuery(() => db.cubeCaseFavorites.toArray()) || [];
   const algorithmStats = useLiveQuery(() => db.algorithmStats.toArray()) || [];
 
+  // Global keydown handler for Cases page
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
-        if (!editingCase) {
+        const activeElement = document.activeElement;
+        const isTextInput = activeElement?.tagName === 'INPUT' || 
+                           activeElement?.tagName === 'TEXTAREA' ||
+                           activeElement?.isContentEditable;
+        
+        // Don't prevent spacebar if:
+        // 1. User is typing in a text input
+        // 2. A case timer is active (let CaseTimer handle it)
+        // 3. User is editing a case (let modal handle it)
+        if (!isTextInput && !activeTimerId && !editingCase) {
           e.preventDefault();
+          e.stopPropagation();
         }
       }
     };
 
     window.addEventListener("keydown", handleGlobalKeyDown, true);
-
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown, true);
+    };
+  }, [editingCase, activeTimerId]);
+
+  // Mark the page as having input when editing case
+  useEffect(() => {
+    if (editingCase) {
+      document.body.setAttribute('data-input-active', 'true');
+    } else {
+      document.body.removeAttribute('data-input-active');
+    }
+
+    return () => {
+      document.body.removeAttribute('data-input-active');
     };
   }, [editingCase]);
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { CubeCase, Algorithm } from '../../types';
 
@@ -47,6 +47,21 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({ cubeCase, onClose, onSave
     return algorithmSlots;
   });
 
+  // Mark modal as having active input to prevent timer interference
+  useEffect(() => {
+    const modalElement = document.querySelector('[data-modal="edit-case"]');
+    if (modalElement) {
+      modalElement.setAttribute('data-input-active', 'true');
+    }
+
+    return () => {
+      const modalElement = document.querySelector('[data-modal="edit-case"]');
+      if (modalElement) {
+        modalElement.removeAttribute('data-input-active');
+      }
+    };
+  }, []);
+
   const getAlgorithmLabel = (index: number): string => {
     if (index === 0) return 'Main';
     if (index === 1) return 'Alt 1';
@@ -73,9 +88,22 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({ cubeCase, onClose, onSave
     onClose();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Allow normal input behavior, prevent event propagation to global handlers
+    e.stopPropagation();
+    
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-xl max-w-lg w-full p-6">
+      <div 
+        className="bg-gray-800 rounded-xl max-w-lg w-full p-6"
+        data-modal="edit-case"
+        onKeyDown={handleKeyDown}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">{cubeCase.id}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
@@ -95,6 +123,7 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({ cubeCase, onClose, onSave
                     type="text"
                     value={algorithm.moves}
                     onChange={(e) => handleAlgorithmChange(index, e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()} // Prevent timer interference
                     className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 font-mono"
                     placeholder="Algorithm notation..."
                   />
