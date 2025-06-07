@@ -10,9 +10,42 @@ interface EditCaseModalProps {
 
 // EditCaseModal allows user to modify the main/alt algorithms for a given cube case
 const EditCaseModal: React.FC<EditCaseModalProps> = ({ cubeCase, onClose, onSave }) => {
-  const [algorithms, setAlgorithms] = useState<Algorithm[]>(
-    cubeCase.algorithms.map(alg => ({ ...alg }))
-  );
+  // Initialize with all 3 possible algorithms, creating empty ones if they don't exist
+  const [algorithms, setAlgorithms] = useState<Algorithm[]>(() => {
+    const baseAlgorithms = [...cubeCase.algorithms];
+    
+    // Ensure we have exactly 3 algorithm slots
+    const algorithmSlots: Algorithm[] = [];
+    
+    // Main algorithm (index 0)
+    algorithmSlots[0] = baseAlgorithms.find(alg => alg.isMain) || {
+      id: `${cubeCase.id}_main`,
+      moves: '',
+      isMain: true,
+      practiceCount: 0,
+      times: []
+    };
+    
+    // Alt 1 algorithm (index 1)
+    algorithmSlots[1] = baseAlgorithms.find(alg => !alg.isMain && alg.id.includes('alt1')) || {
+      id: `${cubeCase.id}_alt1`,
+      moves: '',
+      isMain: false,
+      practiceCount: 0,
+      times: []
+    };
+    
+    // Alt 2 algorithm (index 2)
+    algorithmSlots[2] = baseAlgorithms.find(alg => !alg.isMain && alg.id.includes('alt2')) || {
+      id: `${cubeCase.id}_alt2`,
+      moves: '',
+      isMain: false,
+      practiceCount: 0,
+      times: []
+    };
+    
+    return algorithmSlots;
+  });
 
   const getAlgorithmLabel = (index: number): string => {
     if (index === 0) return 'Main';
@@ -21,15 +54,22 @@ const EditCaseModal: React.FC<EditCaseModalProps> = ({ cubeCase, onClose, onSave
   };
 
   // Update the moves string for the selected algorithm
-const handleAlgorithmChange = (id: string, moves: string) => {
-    setAlgorithms(algorithms.map(alg => 
-      alg.id === id ? { ...alg, moves } : alg
-    ));
+  const handleAlgorithmChange = (index: number, moves: string) => {
+    setAlgorithms(prevAlgorithms => {
+      const newAlgorithms = [...prevAlgorithms];
+      newAlgorithms[index] = {
+        ...newAlgorithms[index],
+        moves
+      };
+      return newAlgorithms;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(algorithms.filter(alg => alg.moves.trim()));
+    // Only save algorithms that have moves
+    const validAlgorithms = algorithms.filter(alg => alg.moves.trim());
+    onSave(validAlgorithms);
     onClose();
   };
 
@@ -46,12 +86,7 @@ const handleAlgorithmChange = (id: string, moves: string) => {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 mb-6">
             {[0, 1, 2].map((index) => {
-              const algorithm = algorithms[index] || {
-                id: `${cubeCase.id}_${index === 0 ? 'main' : `alt${index}`}`,
-                moves: '',
-                isMain: index === 0,
-                practiceCount: 0
-              };
+              const algorithm = algorithms[index];
 
               return (
                 <div key={algorithm.id} className="bg-gray-700 rounded-lg p-4">
@@ -59,7 +94,7 @@ const handleAlgorithmChange = (id: string, moves: string) => {
                   <input
                     type="text"
                     value={algorithm.moves}
-                    onChange={(e) => handleAlgorithmChange(algorithm.id, e.target.value)}
+                    onChange={(e) => handleAlgorithmChange(index, e.target.value)}
                     className="w-full bg-gray-600 border border-gray-500 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 font-mono"
                     placeholder="Algorithm notation..."
                   />
