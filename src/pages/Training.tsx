@@ -1,0 +1,981 @@
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import ReactConfetti from "react-confetti";
+import {
+  RotateCcw,
+  Trophy,
+  Clock,
+  Trash2,
+  Copy,
+  Edit2,
+  Check,
+  Eraser,
+  RefreshCw,
+  MessageSquare,
+} from "lucide-react";
+import Timer from "../components/timer/Timer";
+import SessionManager from "../components/timer/SessionManager";
+import SolveDetailsModal from "../components/timer/SolveDetailsModal";
+import ConfirmationModal from "../components/shared/ConfirmationModal";
+import { generateScramble } from "../utils/scrambleUtils";
+import { generateScramblePreview } from "../utils/visualCube";
+import { calculateSessionStats, formatTime } from "../utils/timeUtils";
+import { db } from "../db";
+import { Session, Solve, PersonalBest } from "../types";
+
+// Main Training page: connects scramble, session, timer, and personal best logic
+const Training: React.FC = () => {
+  const [currentScramble, setCurrentScramble] = useState("");
+  const [editingScramble, setEditingScramble] = useState(false);
+  const [tempScramble, setTempScramble] = useState("");
+  const [showScramble, setShowScramble] = useState(true);
+  const [selectedSolve, setSelectedSolve] = useState<Solve | null>(null);
+  const [showCopyConfirm, setShowCopyConfirm] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [newRecord, setNewRecord] = useState<string | null>(null);
+  const [windowDimensions, setWindowDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+  const scrambleInputRef = useRef<HTMLInputElement>(null);
+
+  // Add a ref to track if a new solve was just added
+  const justAddedSolveRef = useRef(false);
+  const prevAllSolvesCountRef = useRef(0);
+
+  // Refs for scroll detection
+  const timerContainerRef = useRef<HTMLDivElement>(null);
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  // Fetch current session, all sessions, solves in session, and personal bests using Dexie live hooks
+  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
+  const currentSession = useLiveQuery(() => db.getCurrentSession());
+  const userSettings = useLiveQuery(() => db.userSettings.get(1));
+  // Add this query to get all solves for best calculation
+  const allSolves = useLiveQuery(() => db.solves.toArray()) || [];
+  const personalBests = useLiveQuery(() => db.personalBests.toArray()) || [];
+  
+  const solves =
+    useLiveQuery(
+      () =>
+        currentSession
+          ? db.solves
+              .where("sessionId")
+              .equals(currentSession.id)
+              .reverse()
+              .toArray()
+          : Promise.resolve([]),
+      [currentSession?.id],
+    ) || [];
+
+  // Add scroll detection to prevent timer start during scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      // Set flag to false after scroll ends
+      scrollTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 150); // 150ms after scroll stops
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Add global spacebar prevention for the Training page
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Prevent spacebar scrolling globally on the Training page
+      if (e.code === "Space") {
+        // Only prevent if we're not actively editing the scramble
+        if (!editingScramble) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    // Use capture phase to intercept events before they reach other elements
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown, true);
+    };
+  }, [editingScramble]);
+
+  // Get inspection settings for current session
+  const getInspectionSettings = () => {
+    if (!currentSession || !userSettings) {
+      return { useInspection: true, inspectionTime: 15 };
+    }
+
+    return {
+      useInspection: currentSession.useInspection ?? userSettings.useInspectionTime,
+      inspectionTime: currentSession.inspectionTime ?? userSettings.inspectionTime,
+    };
+  };
+
+  const { useInspection, inspectionTime } = getInspectionSettings();
+
+  const getDisplayTime = (solve: Solve): string => {
+    if (solve.penalty === "DNF") return "DNF";
+    const time = solve.penalty === "+2" ? solve.time + 2000 : solve.time;
+    return `${(time / 1000).toFixed(2)}s`;
+  };
+
+  // Get formatted display time from a solve
+  const getFormattedSolveTime = (solve: Solve | null): string => {
+    if (!solve) return "0.00";
+    if (solve.penalty === "DNF") return "DNF";
+    const time = solve.penalty === "+2" ? solve.time + 2000 : solve.time;
+    return `${(time / 1000).toFixed(2)}`;
+  };
+
+  // Get the last solve from the current session
+  const lastSolveTime = useMemo(() => {
+    return solves.length > 0 ? getFormattedSolveTime(solves[0]) : "0.00";
+  }, [solves]); // Will update when solves changes (including session changes)
+
+  // Get current stats
+  const currentStats = calculateSessionStats(solves, allSolves);
+
+  // Find the solve that corresponds to the best single
+  const bestSingleSolve = useMemo(() => {
+    if (!currentStats.bestSingle || !allSolves.length) return null;
+    
+    return allSolves.find(solve => {
+      const adjustedTime = solve.penalty === "+2" ? solve.time + 2000 : solve.time;
+      return solve.penalty !== "DNF" && adjustedTime === currentStats.bestSingle;
+    }) || null;
+  }, [currentStats.bestSingle, allSolves]);
+
+  // Get session name for a solve
+  const getSessionName = (sessionId: string): string => {
+    const session = sessions.find(s => s.id === sessionId);
+    return session?.name || "Unknown Session";
+  };
+
+  // Update window dimensions on resize for confetti
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Track all solves count to detect new solves
+  useEffect(() => {
+    // Safely get the length
+    const currentLength = allSolves?.length || 0;
+
+    if (prevAllSolvesCountRef.current < currentLength) {
+      justAddedSolveRef.current = true;
+    } else {
+      justAddedSolveRef.current = false;
+    }
+    prevAllSolvesCountRef.current = currentLength;
+  }, [allSolves]);
+
+  // Check for new records when stats change
+  useEffect(() => {
+    // Only check for records if we just added a solve and there are solves to check
+    if (!justAddedSolveRef.current || !allSolves || allSolves.length === 0)
+      return;
+
+    // Logic to compare new solve stats against personal bests and update DB if broken
+const checkForNewRecord = async () => {
+      const solveCount = allSolves.length;
+      // Fetch the latest personal bests from DB to be sure we have the most accurate data
+      const currentPersonalBests = await db.personalBests.toArray();
+
+      // Get current best for each category
+      const currentPBs: Record<string, number> = {};
+      currentPersonalBests.forEach((pb) => {
+        if (!currentPBs[pb.type] || pb.time < currentPBs[pb.type]) {
+          currentPBs[pb.type] = pb.time;
+        }
+      });
+
+      const newRecords = [];
+
+      // Check single only after 5 solves
+      if (
+        solveCount >= 5 &&
+        currentStats.bestSingle &&
+        (!currentPBs["single"] ||
+          currentStats.bestSingle < currentPBs["single"])
+      ) {
+        newRecords.push("Single");
+        await savePersonalBest("single", currentStats.bestSingle);
+      }
+
+      // Check ao5
+      if (
+        solveCount >= 5 &&
+        currentStats.bestAo5 &&
+        (!currentPBs["ao5"] || currentStats.bestAo5 < currentPBs["ao5"])
+      ) {
+        newRecords.push("Average of 5");
+        await savePersonalBest("ao5", currentStats.bestAo5);
+      }
+
+      // Check ao12
+      if (
+        solveCount >= 12 &&
+        currentStats.bestAo12 &&
+        (!currentPBs["ao12"] || currentStats.bestAo12 < currentPBs["ao12"])
+      ) {
+        newRecords.push("Average of 12");
+        await savePersonalBest("ao12", currentStats.bestAo12);
+      }
+
+      // Check ao50
+      if (
+        solveCount >= 50 &&
+        currentStats.bestAo50 &&
+        (!currentPBs["ao50"] || currentStats.bestAo50 < currentPBs["ao50"])
+      ) {
+        newRecords.push("Average of 50");
+        await savePersonalBest("ao50", currentStats.bestAo50);
+      }
+
+      // Check ao100
+      if (
+        solveCount >= 100 &&
+        currentStats.bestAo100 &&
+        (!currentPBs["ao100"] || currentStats.bestAo100 < currentPBs["ao100"])
+      ) {
+        newRecords.push("Average of 100");
+        await savePersonalBest("ao100", currentStats.bestAo100);
+      }
+
+      // Show confetti if any record was broken
+      if (newRecords.length > 0) {
+        setNewRecord(newRecords.join(", "));
+        setShowConfetti(true);
+        setTimeout(() => {
+          setShowConfetti(false);
+          setNewRecord(null);
+        }, 5000);
+      }
+    };
+
+    checkForNewRecord();
+    // Reset the flag after checking
+    justAddedSolveRef.current = false;
+  }, [currentStats, allSolves]);
+
+  const savePersonalBest = async (type: string, time: number) => {
+    if (!currentSession) return;
+
+    const pb: PersonalBest = {
+      type: type as any,
+      time,
+      date: new Date(),
+      sessionId: currentSession.id,
+      solveIds: solves
+        .slice(
+          0,
+          type === "single"
+            ? 1
+            : type === "ao5"
+              ? 5
+              : type === "ao12"
+                ? 12
+                : type === "ao50"
+                  ? 50
+                  : 100,
+        )
+        .map((s) => s.id!)
+        .filter((id) => id !== undefined),
+    };
+
+    await db.personalBests.add(pb);
+  };
+
+  const generateNewScramble = () => {
+    setCurrentScramble(generateScramble());
+    setShowScramble(true);
+    setEditingScramble(false);
+  };
+
+  const getSolveCount = (): string => {
+    const dnfCount = solves.filter( (s: Solve) => s.penalty === "DNF").length;
+    if (dnfCount > 0) {
+      return `${(solves.length - dnfCount)}/${solves.length}`;
+    }
+    return `${solves.length}`;
+  };
+
+  const handleSessionChange = async (sessionId: string) => {
+    try {
+      await db.setCurrentSession(sessionId);
+    } catch (err) {
+      console.error("Failed to switch session:", err);
+    }
+  };
+
+  const createNewSession = async (name: string) => {
+    if (!userSettings) return;
+
+    const sessionId = `session_${Date.now()}`;
+    const newSession: Session = {
+      id: sessionId,
+      name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      solveCount: 0,
+      // Initialize with current global settings
+      useInspection: userSettings.useInspectionTime,
+      inspectionTime: userSettings.inspectionTime,
+    };
+
+    await db.sessions.put(newSession);
+    await handleSessionChange(sessionId);
+  };
+
+  // Show confirmation modal for session deletion
+  const showDeleteSessionConfirmation = (sessionId: string, sessionName: string) => {
+    if (sessions.length <= 1) {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Cannot Delete Session',
+        message: 'You cannot delete the last remaining session. At least one session must exist.',
+        variant: 'info',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+      });
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Session',
+      message: `Are you sure you want to delete "${sessionName}" and all its solves? This action cannot be undone.`,
+      variant: 'danger',
+      onConfirm: () => {
+        handleDeleteSession(sessionId);
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      // If we're deleting the current session, switch to default first
+      if (currentSession?.id === sessionId) {
+        console.log("Switching to default session before deletion");
+        await db.setCurrentSession("default");
+      }
+
+      // Now delete the session and its solves
+      console.log("Deleting session:", sessionId);
+      await db.transaction("rw", db.sessions, db.solves, async () => {
+        await db.solves.where("sessionId").equals(sessionId).delete();
+        await db.sessions.delete(sessionId);
+      });
+
+      console.log("Session deleted successfully");
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+      setConfirmModal({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to delete session. Please try again.',
+        variant: 'danger',
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, isOpen: false })),
+      });
+    }
+  };
+
+  const handleCopyScramble = async () => {
+    try {
+      await navigator.clipboard.writeText(currentScramble);
+      setShowCopyConfirm(true);
+      setTimeout(() => setShowCopyConfirm(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy scramble:", err);
+    }
+  };
+
+  const handleEditScramble = () => {
+    setEditingScramble(true);
+    setTempScramble(currentScramble);
+    setTimeout(() => {
+      scrambleInputRef.current?.focus();
+    }, 100);
+  };
+
+  const handleSaveScramble = () => {
+    if (tempScramble.trim()) {
+      setCurrentScramble(tempScramble.trim());
+    }
+    setEditingScramble(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSaveScramble();
+    } else if (e.key === "Escape") {
+      setEditingScramble(false);
+      setTempScramble(currentScramble);
+    }
+  };
+
+  // New function to handle retrying a solve with its scramble
+  const handleRetrySolve = (solve: Solve) => {
+    setCurrentScramble(solve.scramble);
+    setShowScramble(true);
+    setEditingScramble(false);
+  };
+
+  // Save a new solve in the DB, update session metadata, and trigger record check
+const handleSolveComplete = async (time: number) => {
+    if (!currentSession) return;
+
+    const roundedTime = Math.round(time / 10) * 10;
+
+    const newSolve: Solve = {
+      sessionId: currentSession.id,
+      time: roundedTime,
+      scramble: currentScramble,
+      date: new Date(),
+    };
+
+    try {
+      await db.transaction("rw", db.solves, db.sessions, async () => {
+        // Add the new solve
+        await db.solves.add(newSolve);
+
+        // Update session
+        await db.sessions.update(currentSession.id, {
+          solveCount: (currentSession.solveCount || 0) + 1,
+          updatedAt: new Date(),
+        });
+      });
+
+      // Set the flag that we just added a solve - will trigger record check
+      justAddedSolveRef.current = true;
+    } catch (error) {
+      console.error("Failed to save solve:", error);
+    }
+
+    generateNewScramble();
+  };
+
+  // Show confirmation modal for solve deletion
+  const showDeleteSolveConfirmation = (solveId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Solve',
+      message: 'Are you sure you want to delete this solve? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: () => {
+        handleDeleteSolve(solveId);
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
+  };
+
+  const handleDeleteSolve = async (solveId: number) => {
+    if (!currentSession) return;
+
+    await db.transaction("rw", db.solves, db.sessions, async () => {
+      await db.solves.delete(solveId);
+      await db.sessions.update(currentSession.id, {
+        solveCount: Math.max(0, (currentSession.solveCount || 0) - 1),
+        updatedAt: new Date(),
+      });
+    });
+  };
+
+  // Show confirmation modal for clearing all solves
+  const showClearAllSolvesConfirmation = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Clear All Solves',
+      message: 'Are you sure you want to clear all solves in this session? This action cannot be undone.',
+      variant: 'danger',
+      onConfirm: () => {
+        handleClearAllSolves();
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+      },
+    });
+  };
+
+  const handleClearAllSolves = async () => {
+    if (!currentSession) return;
+
+    await db.transaction("rw", db.solves, db.sessions, async () => {
+      await db.solves.where("sessionId").equals(currentSession.id).delete();
+      await db.sessions.update(currentSession.id, {
+        solveCount: 0,
+        updatedAt: new Date(),
+      });
+    });
+  };
+
+  const handleUpdateNotes = async (solveId: number, notes: string) => {
+    await db.solves.update(solveId, { notes });
+  };
+
+  const handleUpdatePenalty = async (
+    solveId: number,
+    penalty: "DNF" | "+2" | undefined,
+  ) => {
+    await db.solves.update(solveId, { penalty });
+  };
+
+  // Handle clicking on best single
+  const handleBestSingleClick = () => {
+    if (bestSingleSolve) {
+      setSelectedSolve(bestSingleSolve);
+    }
+  };
+
+  // Handle inspection settings change
+  const handleInspectionToggle = async (newUseInspection: boolean) => {
+    if (!currentSession) return;
+
+    await db.sessions.update(currentSession.id, {
+      useInspection: newUseInspection,
+      updatedAt: new Date(),
+    });
+  };
+
+  const handleInspectionTimeChange = async (newInspectionTime: number) => {
+    if (!currentSession) return;
+
+    await db.sessions.update(currentSession.id, {
+      inspectionTime: newInspectionTime,
+      updatedAt: new Date(),
+    });
+  };
+
+  useEffect(() => {
+    generateNewScramble();
+  }, []);
+
+  // Debug log to verify the values are changing
+  useEffect(() => {
+    console.log("Session changed or solves updated:", {
+      sessionId: currentSession?.id,
+      solvesCount: solves.length,
+      lastSolveTime,
+    });
+  }, [currentSession?.id, solves.length, lastSolveTime]);
+
+  // Show the most recent solve for "Latest Single" in Current section
+  const latestSingle =
+    solves.length > 0
+      ? solves[0].penalty === "DNF"
+        ? null
+        : solves[0].penalty === "+2"
+          ? solves[0].time + 2000
+          : solves[0].time
+      : null;
+
+  if (!currentSession || !sessions.length) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-lg">Loading session data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      {showConfetti && (
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          <ReactConfetti
+            width={windowDimensions.width}
+            height={windowDimensions.height}
+            recycle={false}
+            numberOfPieces={500}
+            gravity={0.2}
+          />
+          <div className="absolute inset-x-0 top-10 flex justify-center">
+            <div className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce">
+              New record! {newRecord}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          {showScramble && (
+            <div className="space-y-6">
+              <SessionManager
+                sessions={sessions}
+                currentSession={currentSession}
+                onSessionChange={handleSessionChange}
+                onCreateSession={createNewSession}
+                onDeleteSession={(sessionId) => {
+                  const session = sessions.find(s => s.id === sessionId);
+                  showDeleteSessionConfirmation(sessionId, session?.name || 'Unknown Session');
+                }}
+              />
+
+              <div className="bg-gray-800 rounded-lg p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-medium">Scramble</h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleCopyScramble}
+                      className={`text-gray-400 hover:text-white transition-colors ${showCopyConfirm ? "text-green-500" : ""}`}
+                      title="Copy scramble"
+                    >
+                      {showCopyConfirm ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <Copy className="h-5 w-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={handleEditScramble}
+                      className="text-gray-400 hover:text-white transition-colors"
+                      title="Edit scramble"
+                    >
+                      <Edit2 className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={generateNewScramble}
+                      className="text-gray-400 hover:text-white transition-colors"
+                      title="New scramble"
+                    >
+                      <RotateCcw className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-full">
+                    {editingScramble ? (
+                      <input
+                        ref={scrambleInputRef}
+                        type="text"
+                        value={tempScramble}
+                        onChange={(e) => setTempScramble(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onBlur={handleSaveScramble}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-lg md:text-2xl font-['Menlo'] text-center"
+                        placeholder="Enter scramble..."
+                      />
+                    ) : (
+                      <div className="text-lg md:text-2xl font-['Menlo'] text-center break-words mb-6">
+                        {currentScramble}
+                      </div>
+                    )}
+                    <div className="hidden md:flex justify-center">
+                      <img
+                        src={generateScramblePreview(currentScramble)}
+                        alt="Cube state"
+                        className="w-[150px] h-[150px] rounded-lg p-4"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6" ref={timerContainerRef}>
+            <Timer
+              key={`timer-${currentSession?.id}-${useInspection}-${inspectionTime}`}
+              onComplete={handleSolveComplete}
+              inspectionTime={inspectionTime}
+              useInspection={useInspection}
+              isFullSolve={true}
+              onTimerStateChange={(state) =>
+                setShowScramble(state === "idle" || state === "stopped")
+              }
+              onInspectionToggle={handleInspectionToggle}
+              onInspectionTimeChange={handleInspectionTimeChange}
+              initialDisplayTime={lastSolveTime}
+              isScrolling={isScrollingRef.current}
+            />
+          </div>
+        </div>
+
+        {showScramble && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-800 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-gray-700">
+                  <h2 className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Current Session
+                  </h2>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div>
+                    <div className="text-xs text-gray-400">Single</div>
+                    <div className="font-mono text-xl">
+                      {currentStats.currentSingle === null
+                        ? "0.00"
+                        : formatTime(currentStats.currentSingle)}
+                      s
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-gray-400">ao5</div>
+                      <div className="font-mono">
+                        {currentStats.ao5 === null
+                          ? "0.00"
+                          : formatTime(currentStats.ao5)}
+                        s
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">ao12</div>
+                      <div className="font-mono">
+                        {currentStats.ao12 === null
+                          ? "0.00"
+                          : formatTime(currentStats.ao12)}
+                        s
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">ao50</div>
+                      <div className="font-mono">
+                        {currentStats.ao50 === null
+                          ? "0.00"
+                          : formatTime(currentStats.ao50)}
+                        s
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">ao100</div>
+                      <div className="font-mono">
+                        {currentStats.ao100 === null
+                          ? "0.00"
+                          : formatTime(currentStats.ao100)}
+                        s
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-gray-700">
+                  <h2 className="text-sm font-medium flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    All-Time Best
+                  </h2>
+                </div>
+                <div className="p-3 space-y-3">
+                  <div>
+                    <div className="text-xs text-gray-400">Single</div>
+                    <div 
+                      className={`font-mono text-xl ${bestSingleSolve ? 'cursor-pointer hover:text-blue-400 transition-colors' : ''}`}
+                      onClick={bestSingleSolve ? handleBestSingleClick : undefined}
+                      title={bestSingleSolve ? 'Click to view solve details' : undefined}
+                    >
+                      {currentStats.bestSingle === null
+                        ? "0.00"
+                        : formatTime(currentStats.bestSingle)}
+                      s
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-gray-400">ao5</div>
+                      <div className="font-mono">
+                        {currentStats.bestAo5 === null
+                          ? "0.00"
+                          : formatTime(currentStats.bestAo5)}
+                        s
+                      </div>
+                    </div>
+                    <div>
+                      
+                      <div className="text-xs text-gray-400">ao12</div>
+                      <div className="font-mono">
+                        {currentStats.bestAo12 === null
+                          ? "0.00"
+                          : formatTime(currentStats.bestAo12)}
+                        s
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">ao50</div>
+                      <div className="font-mono">
+                        {currentStats.bestAo50 === null
+                          ? "0.00"
+                          : formatTime(currentStats.bestAo50)}
+                        s
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400">ao100</div>
+                      <div className="font-mono">
+                        {currentStats.bestAo100 === null
+                          ? "0.00"
+                          : formatTime(currentStats.bestAo100)}
+                        s
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-800 rounded-lg overflow-hidden">
+              <div className="px-3 py-2 bg-gray-700 flex justify-between items-center">
+                <h2 className="text-sm font-medium">Solve History ( {getSolveCount()} )</h2>
+                {solves.length > 0 && (
+                  <button
+                    onClick={showClearAllSolvesConfirmation}
+                    className="text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1 text-sm"
+                    title="Clear all solves"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    <span>Clear All</span>
+                  </button>
+                )}
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: "300px" }}>
+                {solves.length === 0 ? (
+                  <div className="p-4 text-center text-gray-400">
+                    No solves yet. Start solving to see your history!
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-800 sticky top-0">
+                      <tr>
+                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-400">
+                          #
+                        </th>
+                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-400">
+                          Time
+                        </th>
+                        <th className="px-2 py-2 text-right text-xs font-medium text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-700">
+                      {solves.map((solve, index) => (
+                        <tr
+                          key={solve.id}
+                          className="hover:bg-gray-700 transition-colors cursor-pointer"
+                          onClick={() => setSelectedSolve(solve)}
+                        >
+                          <td className="px-2 py-1.5 text-sm">
+                            {solves.length - index}
+                          </td>
+                          <td
+                            className={`px-2 py-1.5 font-mono text-sm ${
+                              solve.penalty === "DNF"
+                                ? "text-red-500"
+                                : solve.penalty === "+2"
+                                  ? "text-yellow-500"
+                                  : ""
+                            }`}
+                          >
+                            {getDisplayTime(solve)}
+                          </td>
+                          <td className="px-2 py-1.5 text-right">
+                            <div className="flex items-center justify-end gap-2 md:gap-1">
+                              {solve.notes && solve.notes.trim() && (
+                                <MessageSquare className="h-4 w-4 md:h-3.5 md:w-3.5 text-blue-400\" title="Has notes" />
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRetrySolve(solve);
+                                }}
+                                className="text-gray-400 hover:text-blue-500 transition-colors p-1 md:p-0.5 rounded touch-manipulation"
+                                title="Retry with this scramble"
+                              >
+                                <RefreshCw className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  solve.id && showDeleteSolveConfirmation(solve.id);
+                                }}
+                                className="text-gray-400 hover:text-red-500 transition-colors p-1 md:p-0.5 rounded touch-manipulation"
+                                title="Delete solve"
+                              >
+                                <Trash2 className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {selectedSolve && (
+        <SolveDetailsModal
+          solve={selectedSolve}
+          sessionName={getSessionName(selectedSolve.sessionId)}
+          onClose={() => setSelectedSolve(null)}
+          onDelete={() => {
+            handleDeleteSolve(selectedSolve.id!);
+            setSelectedSolve(null);
+          }}
+          onUpdateNotes={(id, notes) => handleUpdateNotes(Number(id), notes)}
+          onUpdatePenalty={(id, penalty) =>
+            handleUpdatePenalty(Number(id), penalty)
+          }
+        />
+      )}
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText={confirmModal.variant === 'danger' ? 'Delete' : 'OK'}
+        cancelText="Cancel"
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
+    </div>
+  );
+};
+
+export default Training;

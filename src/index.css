@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  @font-face {
+    font-family: 'Menlo';
+    src: local('Menlo'), local('Consolas'), local('Monaco'), local('DejaVu Sans Mono'), local('Courier New'), monospace;
+  }
+}
+
+@layer components {
+  .scramble-text {
+    font-family: 'Menlo', 'Consolas', 'Monaco', 'DejaVu Sans Mono', 'Courier New', monospace;
+  }
+}
