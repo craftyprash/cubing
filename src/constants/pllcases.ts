@@ -27,6 +27,8 @@ export const PLLCases = {
     setupMoves: "x R2' D2' R U R' D2' R U' R x'",
     algorithms: {
       main: "x R' U R' D2 R U' R' D2 R2 x'",
+      alt1: "y' (R U R' F') (r U R' U') r' F (R2 U' R')",
+      alt2: "y x' R2 D2 R' U' R D2 R' U R'",
     },
   },
   "PLL-Ab": {
@@ -35,7 +37,9 @@ export const PLLCases = {
     group: PLLGroups.ADJ_SWAP.id,
     setupMoves: "x R' U R' D2' R U' R' D2' R2' x'",
     algorithms: {
-      main: "x R2 D2 R U R' D2 R U' R x'",
+      main: "x R2' D2 R U R' D2 R U' R x'",
+      alt1: "y2 (R' D' R) U2 (R' D R) U (R' D' R) U (R' D R)",
+      alt2: "y x' R U' R D2 R' U R D2 R2'",
     },
   },
   // E Perm
@@ -43,9 +47,9 @@ export const PLLCases = {
     id: "PLL-E",
     name: "E Permutation",
     group: PLLGroups.OPP_SWAP.id,
-    setupMoves: "x' D R U R' D' R U' R' D R U' R' D' R U R' x y'",
+    setupMoves: "x' D R U R' D' R U' R' D R U' R' D' R U R' x",
     algorithms: {
-      main: "y x' R U' R' D R U R' D' R U R' D R U' R' D' x",
+      main: "x' R U' R' D R U R' D' R U R' D R U' R' D' x",
     },
   },
   // F Perm
@@ -53,9 +57,11 @@ export const PLLCases = {
     id: "PLL-F",
     name: "F Permutation",
     group: PLLGroups.ADJ_SWAP.id,
-    setupMoves: "R' U' R U' R' U R U R2' F' R U R U' R' F U R y'",
+    setupMoves: "R' U' R U' R' U R U R2' F' R U R U' R' F U R",
     algorithms: {
-      main: "y R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R",
+      main: "R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R",
+      alt1: "R' F R f' R' F R2 U R' U' R' F' R2 U R' S",
+      alt2: "y' R' U R U' R2' F' U' F U R F R' F' R2",
     },
   },
   // G Perms
@@ -65,7 +71,7 @@ export const PLLCases = {
     group: PLLGroups.ADJ_SWAP.id,
     setupMoves: "R' U' R U D' R2 U R' U R U' R U' R2 D",
     algorithms: {
-      main: "R2 U R' U R' U' R U' R2 D U' R' U R D'",
+      main: "R2 U R' U R' U' R U' R2 (D U') R' U R D'",
     },
   },
   "PLL-Gb": {
@@ -74,7 +80,9 @@ export const PLLCases = {
     group: PLLGroups.ADJ_SWAP.id,
     setupMoves: "R2 U R' U R' U' R U' R2 D U' R' U R D'",
     algorithms: {
-      main: "R' U' R U D' R2 U R' U R U' R U' R2 D",
+      main: "R' U' R (U D') R2 U R' U R U' R U' R2 D",
+      alt1: "R' d' F R2 u R' U R U' R u' R2'",
+      alt2: "y F' U' F R2 u R' U R U' R u' R2'",
     },
   },
   "PLL-Gc": {
@@ -83,7 +91,9 @@ export const PLLCases = {
     group: PLLGroups.ADJ_SWAP.id,
     setupMoves: "R U R' U' D R2 U' R U' R' U R' U R2 D'",
     algorithms: {
-      main: "R2 U' R U' R U R' U R2 D' U R U' R' D",
+      main: "R2' u' R U' R U R' u R2 f R' f'",
+      alt1: "y2 R2 F2 R U2 R U2 R' F R U R' U' R' F R2",
+      alt2: "R2 U' R U' R U R' U R2 D' U R U' R' D",
     },
   },
   "PLL-Gd": {
@@ -92,7 +102,7 @@ export const PLLCases = {
     group: PLLGroups.ADJ_SWAP.id,
     setupMoves: "R2 U' R U' R U R' U R2 D' U R U' R' D",
     algorithms: {
-      main: "R U R' U' D R2 U' R U' R' U R' U R2 D'",
+      main: "R U R' (U' D) R2 U' R U' R' U R' U R2 D'",
     },
   },
   // H Perm
@@ -110,9 +120,10 @@ export const PLLCases = {
     id: "PLL-Ja",
     name: "J Permutation a",
     group: PLLGroups.ADJ_SWAP.id,
-    setupMoves: "L' R' U2' R U R' U2' L U' R y'",
+    setupMoves: "L' R' U2' R U R' U2' L U' R y",
     algorithms: {
-      main: "y2 x R2 F R F' R U2 r' U r U2 x'",
+      main: "x R2 F R F' R U2 r' U r U2 x'",
+      alt1: "y2 L' U' L F L' U' L U L F' L2 U L",
     },
   },
   "PLL-Jb": {
@@ -131,7 +142,9 @@ export const PLLCases = {
     group: PLLGroups.OPP_SWAP.id,
     setupMoves: "R U R' U2' R U R2' F' R U R U' R' F R U' R' U' R U' R'",
     algorithms: {
-      main: "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'",
+      main: "R F U' R' U R U F' R2' F' R U R U' R' F",
+      alt1: "F' R U R' U' R' F R2 F U' R' U' R U F' R'",
+      alt2: "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'",
     },
   },
   "PLL-Nb": {
@@ -140,7 +153,8 @@ export const PLLCases = {
     group: PLLGroups.OPP_SWAP.id,
     setupMoves: "F r' F' r U r U' r2' D' F r U r' F' D r",
     algorithms: {
-      main: "R' U R U' R' F' U' F R U R' F R' F' R U' R",
+      main: "r' D' F r U' r' F' D r2 U r' U' r' F r F'",
+      alt1: "R' U R U' R' F' U' F R U R' F R' F' R U' R",
     },
   },
   // R Perms
@@ -148,9 +162,10 @@ export const PLLCases = {
     id: "PLL-Ra",
     name: "R Permutation a",
     group: PLLGroups.ADJ_SWAP.id,
-    setupMoves: "R U2' R D R' U R D' R' U' R' U R U R' y'",
+    setupMoves: "R U2' R D R' U R D' R' U' R' U R U R'",
     algorithms: {
-      main: "y R U' R' U' R U R D R' U' R D' R' U2 R'",
+      main: "R U' R' U' R U R D R' U' R D' R' U2 R'",
+      alt1: "y L U2 L' U2 L F' L' U' L U L F L2",
     },
   },
   "PLL-Rb": {
@@ -159,7 +174,9 @@ export const PLLCases = {
     group: PLLGroups.ADJ_SWAP.id,
     setupMoves: "R' U R U R' U' R' D' R U R' D R U2' R",
     algorithms: {
-      main: "R' U2 R U2 R' F R U R' U' R' F' R2",
+      main: "(R' U2' R U2') R' F (R U R' U') R' F' R2",
+      alt1: "R' U2 R' D' R U' R' D R U R U' R' U' R",
+      alt2: "y R2' F R U R U' R' F' R U2' R' U2 R",
     },
   },
   // T Perm
@@ -170,6 +187,8 @@ export const PLLCases = {
     setupMoves: "F R U' R' U R U R2' F' R U R U' R'",
     algorithms: {
       main: "R U R' U' R' F R2 U' R' U' R U R' F'",
+      alt1: "y2 L' U' L U L F' L2 U L U L' U' L F",
+      alt2: "R U R' U' R' F R2 U' R' U F' L' U L",
     },
   },
   // U Perms
@@ -179,7 +198,9 @@ export const PLLCases = {
     group: PLLGroups.EPLL.id,
     setupMoves: "M2' U' M' U2' M U' M2'",
     algorithms: {
-      main: "y2 M2 U M U2 M' U M2",
+      main: "(R U R' U R') U' R2 U' (R' U R' U R)",
+      alt1: "y2 M2' U M U2 M' U M2'",
+      alt2: "y R2 U' S' U2' S U' R2",
     },
   },
   "PLL-Ub": {
@@ -188,7 +209,8 @@ export const PLLCases = {
     group: PLLGroups.EPLL.id,
     setupMoves: "M2' U M' U2' M U M2'",
     algorithms: {
-      main: "y2 M2 U' M U2 M' U' M2",
+      main: "R' U R' U' R' U' R' U R U R2'",
+      alt1: "y2 M2 U' M U2 M' U' M2",
     },
   },
   // V Perm
@@ -198,7 +220,9 @@ export const PLLCases = {
     group: PLLGroups.OPP_SWAP.id,
     setupMoves: "D2' R' U R D' R2' U' R' U R' U R' D' R U2' R'",
     algorithms: {
-      main: "R' U R' U' R D' R' D R' U D' R2 U' R2 D R2",
+      main: "R' U R' U' R D' R' D R' (U D') R2 U' R2 D R2",
+      alt1: "R' U R' d' R' F' R2 U' R' U R' F R F",
+      alt2: "R U' R U R' D R D' R U' D R2 U R2 D' R2"
     },
   },
   // Y Perm
@@ -209,6 +233,7 @@ export const PLLCases = {
     setupMoves: "F R' F' R U R U' R' F R U' R' U R U R' F'",
     algorithms: {
       main: "F R U' R' U' R U R' F' R U R' U' R' F R F'",
+      alt1: "F R' F R2 U' R' U' R U R' F' R U R' U' F'",
     },
   },
   // Z Perm
@@ -218,7 +243,7 @@ export const PLLCases = {
     group: PLLGroups.EPLL.id,
     setupMoves: "M U2' M2' U2' M U' M2' U' M2'",
     algorithms: {
-      main: "M' U' M2 U' M2 U' M' U2 M2",
+      main: "M2' U M2' U M' U2 M2' U2 M' U2",
     },
   },
 };
