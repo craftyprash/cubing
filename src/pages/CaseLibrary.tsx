@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Star, Edit2, Clock, Hash, RotateCcw } from "lucide-react";
 import { CubeCase, CubeStage, Algorithm } from "../types";
@@ -22,6 +22,9 @@ const CaseLibrary: React.FC = () => {
   const [activeAlgorithmId, setActiveAlgorithmId] = useState<string | null>(
     null,
   );
+  
+  // Add refs to track case card elements for focus management
+  const caseCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -125,7 +128,7 @@ const CaseLibrary: React.FC = () => {
     }
   };
 
-useEffect(() => {
+  useEffect(() => {
     const loadCases = async () => {
       const allCases =
         selectedStage === "F2L"
@@ -368,7 +371,7 @@ useEffect(() => {
     }
   };
 
-const handleTimerComplete = async (
+  const handleTimerComplete = async (
     caseId: string,
     algorithmId: string,
     time: number,
@@ -436,7 +439,7 @@ const handleTimerComplete = async (
     });
   };
 
-const handleClearStats = async (caseId: string, algorithmId: string) => {
+  const handleClearStats = async (caseId: string, algorithmId: string) => {
     await db.algorithmStats.delete(algorithmId);
 
     setCases(
@@ -465,6 +468,35 @@ const handleClearStats = async (caseId: string, algorithmId: string) => {
 
   const formatTime = (time: number | undefined): string => {
     return formatTimeForDisplay(time);
+  };
+
+  // Handle closing the timer with focus management
+  const handleCloseTimer = () => {
+    const previousActiveTimerId = activeTimerId;
+    
+    // Close the timer overlay but keep the case section open
+    // We do NOT set activeTimerId to null here - this keeps the case section expanded
+    
+    // Focus the case card that was previously active
+    if (previousActiveTimerId && caseCardRefs.current[previousActiveTimerId]) {
+      // Use setTimeout to ensure the timer overlay is fully closed before focusing
+      setTimeout(() => {
+        const caseCard = caseCardRefs.current[previousActiveTimerId];
+        if (caseCard) {
+          caseCard.focus();
+          // Scroll the case into view if needed
+          caseCard.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 100);
+    }
+  };
+
+  // Function to set case card ref
+  const setCaseCardRef = (caseId: string) => (el: HTMLDivElement | null) => {
+    caseCardRefs.current[caseId] = el;
   };
 
   return (
@@ -558,7 +590,12 @@ const handleClearStats = async (caseId: string, algorithmId: string) => {
             const groupName = getGroupName(cubeCase.group);
 
             return (
-              <div key={cubeCase.id} className="bg-gray-800 rounded-xl p-6">
+              <div 
+                key={cubeCase.id} 
+                ref={setCaseCardRef(cubeCase.id)}
+                className="bg-gray-800 rounded-xl p-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                tabIndex={-1}
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="mb-2">
@@ -655,6 +692,7 @@ const handleClearStats = async (caseId: string, algorithmId: string) => {
                               time,
                             )
                           }
+                          onClose={handleCloseTimer}
                         />
                       </div>
                     )}
@@ -693,6 +731,7 @@ const handleClearStats = async (caseId: string, algorithmId: string) => {
                   <button
                     onClick={() => {
                       if (activeTimerId === cubeCase.id) {
+                        // Close the timer but keep the case section open
                         setActiveTimerId(null);
                         setActiveAlgorithmId(null);
                       } else {

@@ -405,7 +405,8 @@ const Timer: React.FC<TimerProps> = ({
             <div className="font-mono text-6xl md:text-8xl font-bold mb-6 text-white select-none">
               {getDisplayText()}
             </div>
-            <div className="text-sm text-white/70">
+            {/* Hide instruction text on mobile when timer is active */}
+            <div className="text-sm text-white/70 hidden md:block">
               {getInstructionText()}
             </div>
           </div>
@@ -485,7 +486,8 @@ const Timer: React.FC<TimerProps> = ({
             <div className="font-mono text-5xl md:text-7xl font-bold mb-6 text-white">
               {getDisplayText()}
             </div>
-            <div className="text-sm text-white/70">
+            {/* Hide instruction text on mobile when timer is idle/stopped */}
+            <div className="text-sm text-white/70 hidden md:block">
               {getInstructionText()}
             </div>
           </div>

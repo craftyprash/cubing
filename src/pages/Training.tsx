@@ -12,6 +12,7 @@ import {
   Eraser,
   RefreshCw,
   MessageSquare,
+  Edit,
 } from "lucide-react";
 import Timer from "../components/timer/Timer";
 import SessionManager from "../components/timer/SessionManager";
@@ -46,6 +47,7 @@ const Training: React.FC = () => {
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -624,7 +626,8 @@ const Training: React.FC = () => {
               />
 
               <div className="bg-gray-800 rounded-lg p-6" ref={scrambleContainerRef}>
-                <div className="flex justify-between items-center mb-6">
+                {/* Hide scramble label on mobile */}
+                <div className="hidden md:flex justify-between items-center mb-6">
                   <h2 className="text-xl font-medium">Scramble</h2>
                   <div className="flex items-center gap-2">
                     <button
@@ -669,10 +672,35 @@ const Training: React.FC = () => {
                         placeholder="Enter scramble..."
                       />
                     ) : (
-                      <div className="text-lg md:text-2xl font-['Menlo'] text-center break-words mb-6">
-                        {currentScramble}
-                      </div>
+                      <>
+                        <div className="text-lg md:text-2xl font-['Menlo'] text-center break-words mb-4 md:mb-6">
+                          {currentScramble}
+                        </div>
+                        
+                        {/* Mobile scramble controls - below scramble text */}
+                        <div className="md:hidden flex justify-center items-center gap-4 mb-4">
+                          <button
+                            onClick={handleCopyScramble}
+                            className={`p-3 rounded-lg transition-colors ${showCopyConfirm ? "text-green-500 bg-green-500/20" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+                            title="Copy scramble"
+                          >
+                            {showCopyConfirm ? (
+                              <Check className="h-6 w-6" />
+                            ) : (
+                              <Copy className="h-6 w-6" />
+                            )}
+                          </button>
+                          <button
+                            onClick={generateNewScramble}
+                            className="p-3 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                            title="New scramble"
+                          >
+                            <RotateCcw className="h-6 w-6" />
+                          </button>
+                        </div>
+                      </>
                     )}
+                    
                     <div className="hidden md:flex justify-center">
                       <img
                         src={generateScramblePreview(currentScramble)}
@@ -705,7 +733,8 @@ const Training: React.FC = () => {
 
         {showScramble && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Desktop Stats - Keep original layout */}
+            <div className="hidden md:grid grid-cols-2 gap-4">
               <div className="bg-gray-800 rounded-lg overflow-hidden">
                 <div className="px-3 py-2 bg-gray-700">
                   <h2 className="text-sm font-medium flex items-center gap-2">
@@ -827,6 +856,113 @@ const Training: React.FC = () => {
               </div>
             </div>
 
+            {/* Mobile Compact Stats */}
+            <div className="md:hidden bg-gray-800 rounded-lg p-4">
+              {/* Current Session Row */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-300">Current Session</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-center">
+                  <div>
+                    <div className="text-xs text-gray-400">Single</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.currentSingle === null
+                        ? "0.00"
+                        : formatTime(currentStats.currentSingle)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao5</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.ao5 === null
+                        ? "0.00"
+                        : formatTime(currentStats.ao5)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao12</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.ao12 === null
+                        ? "0.00"
+                        : formatTime(currentStats.ao12)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao50</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.ao50 === null
+                        ? "0.00"
+                        : formatTime(currentStats.ao50)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao100</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.ao100 === null
+                        ? "0.00"
+                        : formatTime(currentStats.ao100)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* All-Time Best Row */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-300">All-Time Best</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-center">
+                  <div>
+                    <div className="text-xs text-gray-400">Single</div>
+                    <div 
+                      className={`font-mono text-sm ${bestSingleSolve ? 'cursor-pointer hover:text-blue-400 transition-colors' : ''}`}
+                      onClick={bestSingleSolve ? handleBestSingleClick : undefined}
+                      title={bestSingleSolve ? 'Tap to view details' : undefined}
+                    >
+                      {currentStats.bestSingle === null
+                        ? "0.00"
+                        : formatTime(currentStats.bestSingle)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao5</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.bestAo5 === null
+                        ? "0.00"
+                        : formatTime(currentStats.bestAo5)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao12</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.bestAo12 === null
+                        ? "0.00"
+                        : formatTime(currentStats.bestAo12)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao50</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.bestAo50 === null
+                        ? "0.00"
+                        : formatTime(currentStats.bestAo50)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-400">ao100</div>
+                    <div className="font-mono text-sm">
+                      {currentStats.bestAo100 === null
+                        ? "0.00"
+                        : formatTime(currentStats.bestAo100)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-gray-800 rounded-lg overflow-hidden">
               <div className="px-3 py-2 bg-gray-700 flex justify-between items-center">
                 <h2 className="text-sm font-medium">Solve History ( {getSolveCount()} )</h2>
@@ -837,7 +973,7 @@ const Training: React.FC = () => {
                     title="Clear all solves"
                   >
                     <Eraser className="h-4 w-4" />
-                    <span>Clear All</span>
+                    <span className="hidden md:inline">Clear All</span>
                   </button>
                 )}
               </div>
@@ -847,70 +983,139 @@ const Training: React.FC = () => {
                     No solves yet. Start solving to see your history!
                   </div>
                 ) : (
-                  <table className="w-full">
-                    <thead className="bg-gray-800 sticky top-0">
-                      <tr>
-                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-400">
-                          #
-                        </th>
-                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-400">
-                          Time
-                        </th>
-                        <th className="px-2 py-2 text-right text-xs font-medium text-gray-400">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700">
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block">
+                      <table className="w-full">
+                        <thead className="bg-gray-800 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-400">
+                              #
+                            </th>
+                            <th className="px-2 py-2 text-left text-xs font-medium text-gray-400">
+                              Time
+                            </th>
+                            <th className="px-2 py-2 text-right text-xs font-medium text-gray-400"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-700">
+                          {solves.map((solve, index) => (
+                            <tr
+                              key={solve.id}
+                              className="hover:bg-gray-700 transition-colors cursor-pointer"
+                              onClick={() => setSelectedSolve(solve)}
+                            >
+                              <td className="px-2 py-1.5 text-sm">
+                                {solves.length - index}
+                              </td>
+                              <td
+                                className={`px-2 py-1.5 font-mono text-sm ${
+                                  solve.penalty === "DNF"
+                                    ? "text-red-500"
+                                    : solve.penalty === "+2"
+                                      ? "text-yellow-500"
+                                      : ""
+                                }`}
+                              >
+                                {getDisplayTime(solve)}
+                              </td>
+                              <td className="px-2 py-1.5 text-right">
+                                <div className="flex items-center gap-1">
+                                  {solve.notes && solve.notes.trim() && (
+                                    <MessageSquare className="h-3.5 w-3.5 text-blue-400\" title="Has notes" />
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRetrySolve(solve);
+                                    }}
+                                    className="text-gray-400 hover:text-blue-500 transition-colors"
+                                    title="Retry with this scramble"
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      solve.id && showDeleteSolveConfirmation(solve.id);
+                                    }}
+                                    className="text-gray-400 hover:text-red-500 transition-colors"
+                                    title="Delete solve"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-gray-700">
                       {solves.map((solve, index) => (
-                        <tr
+                        <div
                           key={solve.id}
-                          className="hover:bg-gray-700 transition-colors cursor-pointer"
-                          onClick={() => setSelectedSolve(solve)}
+                          className="flex items-center justify-between p-4 hover:bg-gray-700 transition-colors"
                         >
-                          <td className="px-2 py-1.5 text-sm">
-                            {solves.length - index}
-                          </td>
-                          <td
-                            className={`px-2 py-1.5 font-mono text-sm ${
-                              solve.penalty === "DNF"
-                                ? "text-red-500"
-                                : solve.penalty === "+2"
-                                  ? "text-yellow-500"
-                                  : ""
-                            }`}
-                          >
-                            {getDisplayTime(solve)}
-                          </td>
-                          <td className="px-2 py-1.5 text-right">
-                            <div className="flex items-center justify-end gap-2 md:gap-1">
-                              {solve.notes && solve.notes.trim() && (
-                                <MessageSquare className="h-4 w-4 md:h-3.5 md:w-3.5 text-blue-400\" title="Has notes" />
-                              )}
+                          {/* Time Display - Large and tappable for delete */}
+                          <div className="flex-1">
+                            <button
+                              onClick={() => {
+                                setConfirmModal({
+                                  isOpen: true,
+                                  title: 'Delete Solve',
+                                  message: `Are you sure you want to delete this solve (${getDisplayTime(solve)})? This action cannot be undone.`,
+                                  variant: 'danger',
+                                  onConfirm: () => {
+                                    solve.id && handleDeleteSolve(solve.id);
+                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                  },
+                                });
+                              }}
+                              className={`font-mono text-xl text-left w-full ${
+                                solve.penalty === "DNF"
+                                  ? "text-red-500"
+                                  : solve.penalty === "+2"
+                                    ? "text-yellow-500"
+                                    : "text-white"
+                              } hover:text-red-400 transition-colors`}
+                            >
+                              {getDisplayTime(solve)}
+                            </button>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-3">
+                            {solve.notes && solve.notes.trim() && (
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRetrySolve(solve);
-                                }}
-                                className="text-gray-400 hover:text-blue-500 transition-colors p-1 md:p-0.5 rounded touch-manipulation"
-                                title="Retry with this scramble"
+                                onClick={() => setSelectedSolve(solve)}
+                                className="p-2 text-blue-400 hover:text-blue-300 transition-colors rounded-lg"
+                                title="View notes"
                               >
-                                <RefreshCw className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                                <MessageSquare className="h-5 w-5" />
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  solve.id && showDeleteSolveConfirmation(solve.id);
-                                }}
-                                className="text-gray-400 hover:text-red-500 transition-colors p-1 md:p-0.5 rounded touch-manipulation"
-                                title="Delete solve"
-                              >
-                                <Trash2 className="h-4 w-4 md:h-3.5 md:w-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                            )}
+                            <button
+                              onClick={() => setSelectedSolve(solve)}
+                              className="p-3 text-gray-400 hover:text-blue-500 transition-colors rounded-lg bg-gray-700 hover:bg-gray-600"
+                              title="Edit solve details"
+                            >
+                              <Edit className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleRetrySolve(solve)}
+                              className="p-3 text-gray-400 hover:text-blue-500 transition-colors rounded-lg bg-gray-700 hover:bg-gray-600"
+                              title="Retry with this scramble"
+                            >
+                              <RefreshCw className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
