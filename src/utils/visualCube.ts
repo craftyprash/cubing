@@ -69,6 +69,13 @@ const DEFAULT_OPTIONS: VisualCubeOptions = {
   bg: 't'
 };
 
+/**
+ * Generate a URL for the VisualCube API
+ * Creates URLs for cube state visualization with customizable options
+ * 
+ * @param options Configuration options for the cube visualization
+ * @returns URL string for the VisualCube API
+ */
 export const generateVisualCubeUrl = (options: VisualCubeOptions): string => {
   const finalOptions = { ...DEFAULT_OPTIONS, ...options };
   const baseUrl = 'https://cube.rider.biz/visualcube.php';
@@ -86,7 +93,22 @@ export const generateVisualCubeUrl = (options: VisualCubeOptions): string => {
   return `${baseUrl}?${params.toString()}`;
 };
 
-// Generate case preview using setup moves
+/**
+ * Generate case preview using setup moves
+ * Creates visualization for F2L, OLL, and PLL cases
+ * 
+ * Features:
+ * - Automatic view selection based on stage
+ * - F2L cases use oblique view for better visibility
+ * - OLL/PLL cases use plan view for top layer focus
+ * - Transparent background for clean integration
+ * 
+ * @param caseId Unique identifier for the case
+ * @param stage Cube stage (f2l, oll, pll)
+ * @param setupMoves Algorithm moves to set up the case
+ * @param size Image size in pixels (default: 200)
+ * @returns URL for the case visualization
+ */
 export const generateCaseImageUrl = (
   caseId: string,
   stage: string,
@@ -106,7 +128,15 @@ export const generateCaseImageUrl = (
   });
 };
 
-// Generate algorithm preview
+/**
+ * Generate algorithm preview
+ * Shows the result of applying an algorithm to a cube state
+ * 
+ * @param algorithmMoves The algorithm to visualize
+ * @param setupMoves Optional setup moves to apply first
+ * @param size Image size in pixels (default: 150)
+ * @returns URL for the algorithm result visualization
+ */
 export const generateAlgorithmImageUrl = (
   algorithmMoves: string,
   setupMoves?: string,
@@ -122,7 +152,19 @@ export const generateAlgorithmImageUrl = (
   });
 };
 
-// Generate scramble preview
+/**
+ * Generate scramble preview
+ * Shows the cube state after applying a scramble sequence
+ * 
+ * Features:
+ * - Uses oblique view for better 3D perspective
+ * - WCA standard color scheme (white top, green front)
+ * - Transparent background for integration
+ * - Optimized size for scramble display
+ * 
+ * @param scramble The scramble sequence to visualize
+ * @returns URL for the scrambled cube state
+ */
 export const generateScramblePreview = (scramble: string): string => {
   return generateVisualCubeUrl({
     size: 150,
@@ -132,4 +174,190 @@ export const generateScramblePreview = (scramble: string): string => {
     bg: 't',
     sch: 'wrgyob' // U R F D L B - WCA standard colors (white top, green front)
   });
+};
+
+/**
+ * Generate comparison view
+ * Shows before and after states for algorithm learning
+ * 
+ * @param beforeAlg Algorithm for the "before" state
+ * @param afterAlg Algorithm for the "after" state
+ * @param size Image size for each cube
+ * @returns Object with URLs for both states
+ */
+export const generateComparisonView = (
+  beforeAlg: string,
+  afterAlg: string,
+  size: number = 120
+): { before: string; after: string } => {
+  return {
+    before: generateVisualCubeUrl({
+      size,
+      view: 'plan',
+      alg: beforeAlg,
+      fmt: 'png',
+      bg: 't'
+    }),
+    after: generateVisualCubeUrl({
+      size,
+      view: 'plan',
+      alg: afterAlg,
+      fmt: 'png',
+      bg: 't'
+    })
+  };
+};
+
+/**
+ * Generate step-by-step algorithm visualization
+ * Creates a series of cube states showing algorithm execution
+ * 
+ * @param algorithm The algorithm to break down
+ * @param maxSteps Maximum number of steps to show
+ * @returns Array of URLs showing each step
+ */
+export const generateAlgorithmSteps = (
+  algorithm: string,
+  maxSteps: number = 8
+): string[] => {
+  const moves = algorithm.split(' ').filter(move => move.length > 0);
+  const steps: string[] = [];
+  
+  for (let i = 0; i <= Math.min(moves.length, maxSteps); i++) {
+    const partialAlg = moves.slice(0, i).join(' ');
+    steps.push(generateVisualCubeUrl({
+      size: 100,
+      view: 'plan',
+      alg: partialAlg,
+      fmt: 'png',
+      bg: 't'
+    }));
+  }
+  
+  return steps;
+};
+
+/**
+ * Generate cube state for specific pattern
+ * Creates visualization for common cube patterns and positions
+ * 
+ * @param pattern Predefined pattern name or custom algorithm
+ * @param options Additional visualization options
+ * @returns URL for the pattern visualization
+ */
+export const generatePatternView = (
+  pattern: string,
+  options: Partial<VisualCubeOptions> = {}
+): string => {
+  // Common patterns
+  const patterns: Record<string, string> = {
+    'solved': '',
+    'checkerboard': "M2 E2 S2",
+    'cross': "F R U' R' U' R U R' F' R U R' U' R' F R F'",
+    'superflip': "U R2 F B R B2 R U2 L B2 R U' D' R2 F R' L B2 U2 F2",
+    'dots': "F R U R' U' F' f R U R' U' f'",
+  };
+  
+  const algorithm = patterns[pattern.toLowerCase()] || pattern;
+  
+  return generateVisualCubeUrl({
+    size: 200,
+    view: 'oblique',
+    alg: algorithm,
+    fmt: 'png',
+    bg: 't',
+    ...options
+  });
+};
+
+/**
+ * Validate algorithm for visualization
+ * Checks if an algorithm is valid for the VisualCube API
+ * 
+ * @param algorithm Algorithm string to validate
+ * @returns True if algorithm is valid for visualization
+ */
+export const isValidForVisualization = (algorithm: string): boolean => {
+  if (!algorithm || algorithm.trim() === '') return true; // Empty is valid (solved state)
+  
+  // Basic validation for cube notation
+  const movePattern = /^[UDRLBFMES][2']?\s*$/;
+  const moves = algorithm.split(' ').filter(move => move.length > 0);
+  
+  return moves.every(move => movePattern.test(move + ' '));
+};
+
+/**
+ * Get optimal view for cube stage
+ * Returns the best view angle for different cube stages
+ * 
+ * @param stage Cube stage (f2l, oll, pll)
+ * @returns Optimal view type for the stage
+ */
+export const getOptimalView = (stage: string): 'plan' | 'oblique' | 'trans' => {
+  switch (stage.toLowerCase()) {
+    case 'f2l':
+      return 'oblique'; // Better for seeing F2L pairs
+    case 'oll':
+    case 'pll':
+      return 'plan'; // Better for top layer orientation
+    default:
+      return 'oblique'; // General 3D view
+  }
+};
+
+/**
+ * Generate thumbnail grid
+ * Creates a grid of small cube visualizations for case overview
+ * 
+ * @param cases Array of case objects with algorithms
+ * @param size Size for each thumbnail
+ * @returns Array of thumbnail URLs
+ */
+export const generateThumbnailGrid = (
+  cases: Array<{ id: string; setupMoves: string; stage: string }>,
+  size: number = 80
+): Array<{ id: string; url: string }> => {
+  return cases.map(cubeCase => ({
+    id: cubeCase.id,
+    url: generateCaseImageUrl(cubeCase.id, cubeCase.stage, cubeCase.setupMoves, size)
+  }));
+};
+
+/**
+ * Cache management for cube images
+ * Provides utilities for managing cached cube visualizations
+ */
+export const CubeImageCache = {
+  /**
+   * Generate cache key for a cube visualization
+   */
+  getCacheKey: (options: VisualCubeOptions): string => {
+    const sortedOptions = Object.keys(options)
+      .sort()
+      .reduce((result, key) => {
+        result[key] = options[key as keyof VisualCubeOptions];
+        return result;
+      }, {} as any);
+    
+    return btoa(JSON.stringify(sortedOptions));
+  },
+  
+  /**
+   * Check if image is likely cached by browser
+   */
+  isLikelyCached: (url: string): boolean => {
+    // Simple heuristic - if we've generated this URL recently, it's likely cached
+    const cacheKey = url.split('?')[1]; // Get query parameters
+    const cached = sessionStorage.getItem(`cube_cache_${cacheKey}`);
+    return cached !== null;
+  },
+  
+  /**
+   * Mark image as cached
+   */
+  markAsCached: (url: string): void => {
+    const cacheKey = url.split('?')[1];
+    sessionStorage.setItem(`cube_cache_${cacheKey}`, Date.now().toString());
+  }
 };

@@ -70,6 +70,10 @@ export const formatTimeForDisplay = (
 
 /**
  * Format milliseconds to a time string (MM:SS.ms)
+ * Handles both short times (seconds) and long times (minutes)
+ * 
+ * @param timeMs Time in milliseconds
+ * @returns Formatted time string
  */
 export const formatTime = (timeMs: number): string => {
   if (timeMs === null || timeMs === 0) return "0.00";
@@ -90,6 +94,17 @@ export const formatTime = (timeMs: number): string => {
 
 /**
  * Calculate average of N times, excluding best and worst if count >= 5
+ * Implements WCA-compliant averaging rules
+ * 
+ * WCA Rules:
+ * - For ao5+: Remove best and worst times, average the rest
+ * - For ao3: Simple average (no trimming)
+ * - DNF handling: More than 1 DNF = DNF average
+ * - DNF represented as -1 in times array
+ * 
+ * @param times Array of solve times in milliseconds (-1 for DNF)
+ * @param count Number of solves to include in average
+ * @returns Average time in milliseconds, or null if insufficient data/too many DNFs
  */
 export const calculateAverage = (
   times: number[],
@@ -141,6 +156,18 @@ export const calculateAverage = (
 
 /**
  * Calculate session stats including averages and best times
+ * Provides comprehensive statistics for both current session and all-time bests
+ * 
+ * Features:
+ * - Current session statistics (latest averages)
+ * - All-time best statistics (best ever achieved)
+ * - Handles empty sessions gracefully
+ * - Supports penalty handling (+2, DNF)
+ * - Efficient rolling window calculations
+ * 
+ * @param sessionSolves Solves from current session
+ * @param allSolves All solves across sessions (for all-time bests)
+ * @returns Object containing current and best statistics
  */
 export const calculateSessionStats = (
   sessionSolves: { time: number; penalty?: "DNF" | "+2" }[],
@@ -344,5 +371,140 @@ export const calculateSessionStats = (
     bestAo12: bestOverallAo12,
     bestAo50: bestOverallAo50,
     bestAo100: bestOverallAo100,
+  };
+};
+
+/**
+ * Convert time string to milliseconds
+ * Parses user input time strings into milliseconds
+ * 
+ * Supported formats:
+ * - "8.45" -> 8450ms
+ * - "1:23.45" -> 83450ms
+ * - "DNF" -> -1
+ * 
+ * @param timeString Time string to parse
+ * @returns Time in milliseconds, or -1 for DNF, or null for invalid
+ */
+export const parseTimeString = (timeString: string): number | null => {
+  if (!timeString || timeString.trim() === '') return null;
+  
+  const trimmed = timeString.trim().toUpperCase();
+  
+  if (trimmed === 'DNF') return -1;
+  
+  // Handle MM:SS.ss format
+  const minuteMatch = trimmed.match(/^(\d+):(\d{1,2})\.(\d{1,2})$/);
+  if (minuteMatch) {
+    const minutes = parseInt(minuteMatch[1], 10);
+    const seconds = parseInt(minuteMatch[2], 10);
+    const centiseconds = parseInt(minuteMatch[3].padEnd(2, '0'), 10);
+    return (minutes * 60 + seconds) * 1000 + centiseconds * 10;
+  }
+  
+  // Handle SS.ss format
+  const secondMatch = trimmed.match(/^(\d+)\.(\d{1,2})$/);
+  if (secondMatch) {
+    const seconds = parseInt(secondMatch[1], 10);
+    const centiseconds = parseInt(secondMatch[2].padEnd(2, '0'), 10);
+    return seconds * 1000 + centiseconds * 10;
+  }
+  
+  // Handle integer seconds
+  const intMatch = trimmed.match(/^(\d+)$/);
+  if (intMatch) {
+    const seconds = parseInt(intMatch[1], 10);
+    return seconds * 1000;
+  }
+  
+  return null; // Invalid format
+};
+
+/**
+ * Calculate standard deviation of times
+ * Useful for consistency analysis
+ * 
+ * @param times Array of times in milliseconds
+ * @returns Standard deviation in milliseconds
+ */
+export const calculateStandardDeviation = (times: number[]): number | null => {
+  if (!times || times.length < 2) return null;
+  
+  // Filter out DNFs
+  const validTimes = times.filter(t => t !== -1);
+  if (validTimes.length < 2) return null;
+  
+  const mean = validTimes.reduce((sum, time) => sum + time, 0) / validTimes.length;
+  const squaredDifferences = validTimes.map(time => Math.pow(time - mean, 2));
+  const variance = squaredDifferences.reduce((sum, diff) => sum + diff, 0) / validTimes.length;
+  
+  return Math.sqrt(variance);
+};
+
+/**
+ * Calculate solve rate (solves per minute)
+ * Useful for tracking practice intensity
+ * 
+ * @param solves Array of solve objects with date property
+ * @param timeWindowMs Time window in milliseconds (default: 1 hour)
+ * @returns Solves per minute
+ */
+export const calculateSolveRate = (
+  solves: { date: Date }[],
+  timeWindowMs: number = 3600000 // 1 hour
+): number => {
+  if (!solves || solves.length === 0) return 0;
+  
+  const now = new Date();
+  const cutoffTime = new Date(now.getTime() - timeWindowMs);
+  
+  const recentSolves = solves.filter(solve => solve.date >= cutoffTime);
+  const timeWindowMinutes = timeWindowMs / 60000;
+  
+  return recentSolves.length / timeWindowMinutes;
+};
+
+/**
+ * Get time distribution statistics
+ * Provides percentile analysis of solve times
+ * 
+ * @param times Array of times in milliseconds
+ * @returns Object with percentile statistics
+ */
+export const getTimeDistribution = (times: number[]) => {
+  const validTimes = times.filter(t => t !== -1).sort((a, b) => a - b);
+  
+  if (validTimes.length === 0) {
+    return {
+      min: null,
+      max: null,
+      median: null,
+      q1: null,
+      q3: null,
+      p90: null,
+      p95: null,
+      p99: null
+    };
+  }
+  
+  const getPercentile = (arr: number[], percentile: number): number => {
+    const index = (percentile / 100) * (arr.length - 1);
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    const weight = index % 1;
+    
+    if (upper >= arr.length) return arr[arr.length - 1];
+    return arr[lower] * (1 - weight) + arr[upper] * weight;
+  };
+  
+  return {
+    min: validTimes[0],
+    max: validTimes[validTimes.length - 1],
+    median: getPercentile(validTimes, 50),
+    q1: getPercentile(validTimes, 25),
+    q3: getPercentile(validTimes, 75),
+    p90: getPercentile(validTimes, 90),
+    p95: getPercentile(validTimes, 95),
+    p99: getPercentile(validTimes, 99)
   };
 };

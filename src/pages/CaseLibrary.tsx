@@ -1,3 +1,46 @@
+/**
+ * CaseLibrary.tsx - Algorithm Practice Interface
+ * 
+ * Comprehensive interface for practicing F2L, OLL, and PLL algorithms with
+ * individual timing, statistics tracking, and algorithm management. Provides
+ * visual case representations and detailed performance analytics.
+ * 
+ * Key Features:
+ * - Complete F2L, OLL, PLL case libraries with visual representations
+ * - Multiple algorithms per case (main + alternatives)
+ * - Individual algorithm timing and statistics
+ * - Case favoriting and filtering system
+ * - Algorithm editing and customization
+ * - Detailed practice history with clickable solve times
+ * - Visual cube state representations
+ * - Mobile-optimized interface
+ * 
+ * Architecture:
+ * - Uses static case definitions from constants files
+ * - Integrates with IndexedDB for statistics persistence
+ * - Implements real-time statistics calculation
+ * - Provides comprehensive algorithm management
+ * 
+ * Case Organization:
+ * - F2L: 41 cases across 6 groups (Connected Pairs, Corner in Slot, etc.)
+ * - OLL: 57 cases across 14 groups (Dot Cases, Line Shapes, etc.)
+ * - PLL: 21 cases across 3 groups (Adjacent Swap, Edge Permutation, etc.)
+ * 
+ * Statistics Tracking:
+ * - Practice count per algorithm
+ * - Best time per algorithm
+ * - Average of 5 and 12 per algorithm
+ * - Last practiced timestamp
+ * - Complete solve history with deletion capability
+ * 
+ * User Experience:
+ * - Visual case identification with cube images
+ * - Quick algorithm switching during practice
+ * - Persistent case section state
+ * - Comprehensive statistics display
+ * - Mobile-friendly touch controls
+ */
+
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Star, Edit2, Clock, Hash, RotateCcw } from "lucide-react";
@@ -13,19 +56,19 @@ import { formatTimeForDisplay } from "../utils/timeUtils";
 import { db } from "../db";
 
 const CaseLibrary: React.FC = () => {
+  // Core component state
   const [selectedStage, setSelectedStage] = useState<CubeStage>("F2L");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [cases, setCases] = useState<CubeCase[]>([]);
   const [editingCase, setEditingCase] = useState<CubeCase | null>(null);
   const [showFavorites, setShowFavorites] = useState(false);
   const [activeTimerId, setActiveTimerId] = useState<string | null>(null);
-  const [activeAlgorithmId, setActiveAlgorithmId] = useState<string | null>(
-    null,
-  );
+  const [activeAlgorithmId, setActiveAlgorithmId] = useState<string | null>(null);
   
-  // Add refs to track case card elements for focus management
+  // Focus management for accessibility
   const caseCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   
+  // Confirmation modal state for destructive actions
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -39,10 +82,16 @@ const CaseLibrary: React.FC = () => {
     onConfirm: () => {},
   });
 
+  /**
+   * Live database queries for real-time updates
+   */
   const favorites = useLiveQuery(() => db.cubeCaseFavorites.toArray()) || [];
   const algorithmStats = useLiveQuery(() => db.algorithmStats.toArray()) || [];
 
-  // Global keydown handler for Cases page
+  /**
+   * Global keyboard event handler for Cases page
+   * Prevents spacebar timer activation during text input or case editing
+   */
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
@@ -68,7 +117,10 @@ const CaseLibrary: React.FC = () => {
     };
   }, [editingCase, activeTimerId]);
 
-  // Mark the page as having input when editing case
+  /**
+   * Mark the page as having input when editing case
+   * Prevents timer interference during algorithm editing
+   */
   useEffect(() => {
     if (editingCase) {
       document.body.setAttribute('data-input-active', 'true');
@@ -81,6 +133,10 @@ const CaseLibrary: React.FC = () => {
     };
   }, [editingCase]);
 
+  /**
+   * Get available groups for the selected stage
+   * Returns group information with case counts
+   */
   const getGroups = () => {
     switch (selectedStage) {
       case "F2L":
@@ -109,6 +165,9 @@ const CaseLibrary: React.FC = () => {
     }
   };
 
+  /**
+   * Get group name by ID for display purposes
+   */
   const getGroupName = (groupId: string): string => {
     switch (selectedStage) {
       case "F2L":
@@ -128,6 +187,10 @@ const CaseLibrary: React.FC = () => {
     }
   };
 
+  /**
+   * Load and process cases for the selected stage
+   * Integrates static case definitions with dynamic statistics and favorites
+   */
   useEffect(() => {
     const loadCases = async () => {
       const allCases =
@@ -137,6 +200,7 @@ const CaseLibrary: React.FC = () => {
             ? Object.values(OLLCases)
             : Object.values(PLLCases);
 
+      // Convert favorites array to a map for efficient lookup
       const favoritesMap = favorites.reduce(
         (map, fav) => {
           map[fav.caseId] = true;
@@ -145,6 +209,7 @@ const CaseLibrary: React.FC = () => {
         {} as Record<string, boolean>,
       );
 
+      // Create a map of algorithm stats for faster lookups
       const statsMap = algorithmStats.reduce(
         (map, stat) => {
           map[stat.algorithmId] = stat;
@@ -203,6 +268,10 @@ const CaseLibrary: React.FC = () => {
     loadCases();
   }, [selectedStage, favorites, algorithmStats]);
 
+  /**
+   * Get solve history display for an algorithm
+   * Shows recent practice times in a readable format
+   */
   const getSolveHistoryDisplay = (
     times: number[] = [],
     limit: number = 12,
@@ -210,16 +279,22 @@ const CaseLibrary: React.FC = () => {
     if (!times.length) return "No solves yet";
 
     const recentTimes = times.slice(-limit);
-
     return recentTimes.map((t) => formatTimeForDisplay(t)).join(" ");
   };
 
+  /**
+   * Filter cases based on current selection criteria
+   */
   const filteredCases = cases.filter((c) => {
     if (showFavorites && !c.isFavorite) return false;
     if (selectedGroup !== "all" && c.group !== selectedGroup) return false;
     return true;
   });
 
+  /**
+   * Save edited case algorithms to state
+   * Preserves existing statistics while updating algorithm moves
+   */
   const handleSaveCase = async (algorithms: Algorithm[]) => {
     if (!editingCase) return;
 
@@ -246,6 +321,10 @@ const CaseLibrary: React.FC = () => {
     );
   };
 
+  /**
+   * Toggle case favorite status
+   * Updates both local state and database
+   */
   const toggleFavorite = async (caseId: string) => {
     setCases(
       cases.map((c) =>
@@ -264,6 +343,10 @@ const CaseLibrary: React.FC = () => {
     }
   };
 
+  /**
+   * Calculate averages for algorithm statistics
+   * Implements WCA-compliant averaging rules
+   */
   const calculateAverages = (times: number[]) => {
     const calculateAverage = (count: number) => {
       if (times.length < count) return null;
@@ -282,6 +365,9 @@ const CaseLibrary: React.FC = () => {
     };
   };
 
+  /**
+   * Show confirmation modal for deleting individual solve times
+   */
   const showDeleteSolveTimeConfirmation = (caseId: string, algorithmId: string, timeIndex: number, timeValue: number) => {
     setConfirmModal({
       isOpen: true,
@@ -295,6 +381,10 @@ const CaseLibrary: React.FC = () => {
     });
   };
 
+  /**
+   * Delete individual solve time from algorithm statistics
+   * Handles both database updates and state management
+   */
   const handleDeleteSolveTime = async (caseId: string, algorithmId: string, timeIndex: number) => {
     const existingStat = await db.algorithmStats.get(algorithmId);
     if (!existingStat || !existingStat.times || existingStat.times.length === 0) {
@@ -306,6 +396,7 @@ const CaseLibrary: React.FC = () => {
     times.splice(actualIndex, 1);
 
     if (times.length === 0) {
+      // Delete entire stat record if no times remain
       await db.algorithmStats.delete(algorithmId);
       
       setCases(
@@ -331,6 +422,7 @@ const CaseLibrary: React.FC = () => {
         ),
       );
     } else {
+      // Update statistics with remaining times
       const bestTime = Math.min(...times);
       const { ao5, ao12 } = calculateAverages(times);
 
@@ -371,6 +463,10 @@ const CaseLibrary: React.FC = () => {
     }
   };
 
+  /**
+   * Handle timer completion for algorithm practice
+   * Updates statistics in both database and local state
+   */
   const handleTimerComplete = async (
     caseId: string,
     algorithmId: string,
@@ -422,10 +518,16 @@ const CaseLibrary: React.FC = () => {
     );
   };
 
+  /**
+   * Handle algorithm selection change during practice
+   */
   const handleAlgorithmChange = (caseId: string, newAlgorithmId: string) => {
     setActiveAlgorithmId(newAlgorithmId);
   };
 
+  /**
+   * Show confirmation modal for clearing algorithm statistics
+   */
   const showClearStatsConfirmation = (caseId: string, algorithmId: string) => {
     setConfirmModal({
       isOpen: true,
@@ -439,6 +541,9 @@ const CaseLibrary: React.FC = () => {
     });
   };
 
+  /**
+   * Clear all statistics for a specific algorithm
+   */
   const handleClearStats = async (caseId: string, algorithmId: string) => {
     await db.algorithmStats.delete(algorithmId);
 
@@ -466,11 +571,17 @@ const CaseLibrary: React.FC = () => {
     );
   };
 
+  /**
+   * Format time for display with fallback for undefined values
+   */
   const formatTime = (time: number | undefined): string => {
     return formatTimeForDisplay(time);
   };
 
-  // Handle closing the timer with focus management
+  /**
+   * Handle closing the timer with focus management
+   * Keeps case section open and returns focus to case card
+   */
   const handleCloseTimer = () => {
     const previousActiveTimerId = activeTimerId;
     
@@ -494,7 +605,9 @@ const CaseLibrary: React.FC = () => {
     }
   };
 
-  // Function to set case card ref
+  /**
+   * Function to set case card ref for focus management
+   */
   const setCaseCardRef = (caseId: string) => (el: HTMLDivElement | null) => {
     caseCardRefs.current[caseId] = el;
   };
@@ -502,6 +615,7 @@ const CaseLibrary: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Stage selection buttons */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
           <button
             onClick={() => setSelectedStage("F2L")}
@@ -543,6 +657,7 @@ const CaseLibrary: React.FC = () => {
           </button>
         </div>
 
+        {/* Group filtering buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
           <button
             onClick={() => setSelectedGroup("all")}
@@ -570,6 +685,7 @@ const CaseLibrary: React.FC = () => {
           ))}
         </div>
 
+        {/* Case grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCases.map((cubeCase) => {
             const activeAlgorithm =
@@ -596,6 +712,7 @@ const CaseLibrary: React.FC = () => {
                 className="bg-gray-800 rounded-xl p-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 tabIndex={-1}
               >
+                {/* Case header with image and algorithm */}
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="mb-2">
@@ -613,6 +730,7 @@ const CaseLibrary: React.FC = () => {
                   />
                 </div>
 
+                {/* Timer section (when active) */}
                 {activeTimerId === cubeCase.id && (
                   <div className="mb-4">
                     <div className="flex gap-2 mb-2">
@@ -645,6 +763,7 @@ const CaseLibrary: React.FC = () => {
                           }
                         </div>
 
+                        {/* Recent solve times display */}
                         <div className="mb-3">
                           <div className="text-xs text-gray-400 mb-1">
                             Recent solves (click to delete):
@@ -699,6 +818,7 @@ const CaseLibrary: React.FC = () => {
                   </div>
                 )}
 
+                {/* Statistics display */}
                 <div className="grid grid-cols-4 gap-2 mb-4 text-sm">
                   <div>
                     <div className="text-gray-400">Best</div>
@@ -727,6 +847,7 @@ const CaseLibrary: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Action buttons */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
@@ -787,6 +908,7 @@ const CaseLibrary: React.FC = () => {
         </div>
       </div>
 
+      {/* Edit Case Modal */}
       {editingCase && (
         <EditCaseModal
           cubeCase={editingCase}
@@ -795,6 +917,7 @@ const CaseLibrary: React.FC = () => {
         />
       )}
 
+      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}

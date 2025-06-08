@@ -1,3 +1,50 @@
+/**
+ * Timer.tsx - Main Timer Component for Full Solve Practice
+ * 
+ * This is the core timer component that handles full speedcube solve timing with
+ * inspection time support, precise timing, and comprehensive state management.
+ * 
+ * Key Features:
+ * - WCA-compliant inspection time (8s, 15s, 30s)
+ * - Centisecond precision timing using Date.now()
+ * - Multi-input support (keyboard spacebar + touch/mouse)
+ * - Visual state feedback with full-screen overlays
+ * - Settings integration for inspection configuration
+ * - Mobile-optimized touch handling
+ * 
+ * Timer States:
+ * - IDLE: Ready to start, showing last time or 0.00
+ * - READY: Holding spacebar/touch, preparing to start
+ * - INSPECTION: 15s countdown before solve
+ * - INSPECTION_READY: Ready to start after inspection
+ * - RUNNING: Timer actively counting
+ * - STOPPED: Timer stopped, showing final time
+ * 
+ * Input Handling:
+ * - Spacebar: Hold 0.25s to start, tap to stop
+ * - Touch: Hold timer area 0.25s to start, tap to stop
+ * - Escape: Cancel timer without recording solve
+ * 
+ * Visual Feedback:
+ * - Gray: Idle state
+ * - Red: Ready state (holding to start)
+ * - Yellow: Inspection countdown
+ * - Green: Timer running
+ * - Blue: Timer stopped
+ * 
+ * Performance Considerations:
+ * - 10ms update interval for smooth display
+ * - Event capture phase for reliable input
+ * - Cleanup of intervals and listeners
+ * - Optimized re-renders with useCallback
+ * 
+ * Mobile Optimizations:
+ * - Touch event handling with gesture prevention
+ * - Excluded buttons (data-timer-exclude)
+ * - Responsive text sizing
+ * - Scroll prevention during timing
+ */
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Clock, Settings } from "lucide-react";
 
@@ -12,13 +59,17 @@ interface TimerProps {
   initialDisplayTime?: string;
 }
 
+/**
+ * TimerState enum defines the complete lifecycle of timer interaction
+ * Each state has specific visual feedback and allowed transitions
+ */
 enum TimerState {
-  IDLE = "idle",
-  READY = "ready",
-  INSPECTION = "inspection",
-  INSPECTION_READY = "inspection_ready",
-  RUNNING = "running",
-  STOPPED = "stopped",
+  IDLE = "idle",                    // Ready to start, showing last time
+  READY = "ready",                  // Holding spacebar/touch, preparing to start
+  INSPECTION = "inspection",        // Countdown phase before solve
+  INSPECTION_READY = "inspection_ready", // Ready to start after inspection
+  RUNNING = "running",              // Timer actively counting
+  STOPPED = "stopped",              // Timer stopped, showing final time
 }
 
 const Timer: React.FC<TimerProps> = ({
@@ -31,40 +82,58 @@ const Timer: React.FC<TimerProps> = ({
   onInspectionTimeChange,
   initialDisplayTime = "0.00",
 }) => {
+  // Core timer state
   const [timerState, setTimerState] = useState<TimerState>(TimerState.IDLE);
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [inspectionTimeLeft, setInspectionTimeLeft] =
-    useState<number>(inspectionTime);
+  const [inspectionTimeLeft, setInspectionTimeLeft] = useState<number>(inspectionTime);
   const [displayTime, setDisplayTime] = useState<string>(initialDisplayTime);
-  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(
-    null,
-  );
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Input handling state
   const [touchStartTime, setTouchStartTime] = useState<number | null>(null);
   const [useInspection, setUseInspection] = useState(initialUseInspection);
   const [showSettings, setShowSettings] = useState(false);
+  
+  // Performance and control refs
   const lastStopTimeRef = useRef<number>(0);
-  const COOLDOWN_PERIOD = 500;
-  const HOLD_DURATION = 250;
-
   const isHoldingRef = useRef(false);
   const holdTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Timing constants
+  const COOLDOWN_PERIOD = 500;  // Prevent accidental restart after stop
+  const HOLD_DURATION = 250;    // Required hold time to start timer
 
+  /**
+   * Update displayTime when initialDisplayTime prop changes
+   * This allows parent components to control the display
+   */
   useEffect(() => {
     if (timerState === TimerState.IDLE || timerState === TimerState.STOPPED) {
       setDisplayTime(initialDisplayTime);
     }
   }, [initialDisplayTime, timerState]);
 
+  /**
+   * Sync useInspection state with prop changes
+   */
   useEffect(() => {
     setUseInspection(initialUseInspection);
   }, [initialUseInspection]);
 
+  /**
+   * Central state management function that updates timer state
+   * and notifies parent component of state changes
+   */
   const updateTimerState = (newState: TimerState) => {
     setTimerState(newState);
     onTimerStateChange?.(newState);
   };
 
+  /**
+   * Get display text based on current timer state
+   * Handles different display modes for each state
+   */
   const getDisplayText = () => {
     if (timerState === TimerState.IDLE) {
       return displayTime;
@@ -84,6 +153,10 @@ const Timer: React.FC<TimerProps> = ({
     return displayTime;
   };
 
+  /**
+   * Format milliseconds to display string with centisecond precision
+   * Rounds to nearest centisecond for consistent display
+   */
   const formatDisplayTime = (ms: number): string => {
     const roundedMs = Math.round(ms / 10) * 10;
     const seconds = Math.floor(roundedMs / 1000);
@@ -91,6 +164,10 @@ const Timer: React.FC<TimerProps> = ({
     return `${seconds}.${milliseconds.toString().padStart(2, "0")}`;
   };
 
+  /**
+   * Start the running timer with high-frequency updates
+   * Uses 10ms intervals for smooth visual feedback
+   */
   const startRunningTimer = () => {
     const start = Date.now();
     setStartTime(start);
@@ -104,6 +181,10 @@ const Timer: React.FC<TimerProps> = ({
     setTimerInterval(interval);
   };
 
+  /**
+   * Stop the running timer and record the final time
+   * Calls onComplete callback with precise elapsed time
+   */
   const stopRunningTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -119,6 +200,10 @@ const Timer: React.FC<TimerProps> = ({
     }
   };
 
+  /**
+   * Cancel the timer without recording a solve
+   * Used when user presses Escape during timing
+   */
   const cancelTimer = () => {
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -133,9 +218,12 @@ const Timer: React.FC<TimerProps> = ({
     isHoldingRef.current = false;
   };
 
-  // Unified trigger functions
+  /**
+   * Handle the start of timer interaction (spacebar down, touch start)
+   * Manages state transitions and cooldown periods
+   */
   const triggerStartAction = () => {
-    // Check cooldown period
+    // Check cooldown period after stopping
     if (
       timerState === TimerState.STOPPED &&
       Date.now() - lastStopTimeRef.current < COOLDOWN_PERIOD
@@ -163,6 +251,10 @@ const Timer: React.FC<TimerProps> = ({
     }
   };
 
+  /**
+   * Handle the end of timer interaction (spacebar up, touch end)
+   * Validates hold duration and starts timer if appropriate
+   */
   const triggerEndAction = () => {
     if (!touchStartTime) return;
 
@@ -187,6 +279,10 @@ const Timer: React.FC<TimerProps> = ({
     setTouchStartTime(null);
   };
 
+  /**
+   * Keyboard event handler with input context detection
+   * Prevents timer activation when user is typing
+   */
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
@@ -218,6 +314,9 @@ const Timer: React.FC<TimerProps> = ({
     [timerState, useInspection, inspectionTime],
   );
 
+  /**
+   * Keyboard release handler
+   */
   const handleKeyUp = useCallback(
     (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
@@ -237,6 +336,10 @@ const Timer: React.FC<TimerProps> = ({
     [timerState, touchStartTime],
   );
 
+  /**
+   * Touch event handlers for mobile devices
+   * Includes button exclusion logic for settings
+   */
   const handleTimerAreaTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
     const isExcludedButton = target.closest('[data-timer-exclude]');
@@ -269,6 +372,9 @@ const Timer: React.FC<TimerProps> = ({
     triggerEndAction();
   }, [timerState, touchStartTime]);
 
+  /**
+   * Mouse event handlers for desktop devices
+   */
   const handleTimerAreaMouseDown = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     const isExcludedButton = target.closest('[data-timer-exclude]');
@@ -301,6 +407,10 @@ const Timer: React.FC<TimerProps> = ({
     triggerEndAction();
   }, [timerState, touchStartTime]);
 
+  /**
+   * Inspection time countdown effect
+   * Automatically transitions to idle when inspection expires
+   */
   useEffect(() => {
     let inspectionInterval: NodeJS.Timeout | undefined;
 
@@ -309,7 +419,7 @@ const Timer: React.FC<TimerProps> = ({
         setInspectionTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(inspectionInterval);
-            isHoldingRef.current = false; // Reset holding state
+            isHoldingRef.current = false;
             updateTimerState(TimerState.IDLE);
             return inspectionTime;
           }
@@ -323,8 +433,11 @@ const Timer: React.FC<TimerProps> = ({
     };
   }, [timerState, inspectionTime]);
 
+  /**
+   * Global event listener setup with capture phase
+   * Ensures timer events are captured before other handlers
+   */
   useEffect(() => {
-    // Use capture phase to intercept events before they reach other handlers
     window.addEventListener("keydown", handleKeyDown, true);
     window.addEventListener("keyup", handleKeyUp, true);
 
@@ -336,6 +449,9 @@ const Timer: React.FC<TimerProps> = ({
     };
   }, [handleKeyDown, handleKeyUp]);
 
+  /**
+   * Get CSS classes for timer display based on current state
+   */
   const getTimerClasses = () => {
     const baseClasses =
       "fixed inset-0 flex flex-col items-center justify-center transition-colors duration-300";
@@ -355,6 +471,9 @@ const Timer: React.FC<TimerProps> = ({
     return `${baseClasses} bg-gray-800/90`;
   };
 
+  /**
+   * Settings handlers for inspection configuration
+   */
   const handleInspectionToggle = () => {
     const newValue = !useInspection;
     setUseInspection(newValue);
@@ -366,6 +485,9 @@ const Timer: React.FC<TimerProps> = ({
     onInspectionTimeChange?.(newTime);
   };
 
+  /**
+   * Get contextual instruction text for current timer state
+   */
   const getInstructionText = () => {
     if (timerState === TimerState.INSPECTION) {
       return "Hold anywhere for 0.25s to start timer";
@@ -389,6 +511,7 @@ const Timer: React.FC<TimerProps> = ({
 
   return (
     <>
+      {/* Full-screen overlay for active timer states */}
       {timerState === TimerState.RUNNING ||
       timerState === TimerState.INSPECTION ||
       timerState === TimerState.READY ||
@@ -412,6 +535,7 @@ const Timer: React.FC<TimerProps> = ({
           </div>
         </div>
       ) : (
+        /* Inline timer display for idle and stopped states */
         <div 
           className="relative min-h-[300px] flex flex-col items-center justify-center bg-gray-800 rounded-xl cursor-pointer select-none"
           onTouchStart={handleTimerAreaTouchStart}
@@ -420,6 +544,7 @@ const Timer: React.FC<TimerProps> = ({
           onMouseUp={handleTimerAreaMouseUp}
           style={{ touchAction: 'none' }}
         >
+          {/* Settings panel - excluded from timer events */}
           {timerState !== TimerState.RUNNING && (
             <div className="absolute top-4 right-4 flex items-center gap-2">
               <button
@@ -443,6 +568,7 @@ const Timer: React.FC<TimerProps> = ({
             </div>
           )}
 
+          {/* Settings dropdown */}
           {showSettings && (
             <div 
               data-timer-exclude="true"
@@ -482,6 +608,7 @@ const Timer: React.FC<TimerProps> = ({
             </div>
           )}
 
+          {/* Main timer display */}
           <div className="text-center">
             <div className="font-mono text-5xl md:text-7xl font-bold mb-6 text-white">
               {getDisplayText()}

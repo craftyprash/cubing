@@ -1,3 +1,48 @@
+/**
+ * SessionManager.tsx - Session Creation and Management Interface
+ * 
+ * Provides a comprehensive interface for managing practice sessions, including
+ * creation, deletion, and switching between sessions. Handles input validation
+ * and prevents timer interference during session name entry.
+ * 
+ * Key Features:
+ * - Session creation with name validation
+ * - Session switching with solve count display
+ * - Session deletion with confirmation
+ * - Input isolation to prevent timer activation
+ * - Error handling and user feedback
+ * 
+ * Design Philosophy:
+ * - Minimal UI footprint
+ * - Clear visual feedback
+ * - Keyboard-friendly interaction
+ * - Error prevention and recovery
+ * 
+ * Input Handling:
+ * - Prevents spacebar from triggering timer during text entry
+ * - Uses data-input-active attribute for context detection
+ * - Keyboard shortcuts (Enter to save, Escape to cancel)
+ * - Click-outside-to-cancel behavior
+ * 
+ * Session Management:
+ * - Dropdown for session selection
+ * - Inline creation mode
+ * - Solve count display in parentheses
+ * - Protection against deleting last session
+ * 
+ * Error Handling:
+ * - Duplicate name detection
+ * - Empty name validation
+ * - Database error recovery
+ * - User-friendly error messages
+ * 
+ * Accessibility:
+ * - Proper focus management
+ * - Keyboard navigation support
+ * - Screen reader friendly labels
+ * - Clear visual hierarchy
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Check, Trash2 } from 'lucide-react';
 import { Session } from '../../types';
@@ -17,13 +62,19 @@ const SessionManager: React.FC<SessionManagerProps> = ({
   onCreateSession,
   onDeleteSession
 }) => {
+  // Component state
   const [isCreating, setIsCreating] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  
+  // Refs for DOM manipulation and focus management
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Mark container as having active input when creating
+  /**
+   * Mark container as having active input to prevent timer interference
+   * Uses data-input-active attribute that global event handlers check
+   */
   useEffect(() => {
     if (containerRef.current) {
       if (isCreating) {
@@ -34,6 +85,10 @@ const SessionManager: React.FC<SessionManagerProps> = ({
     }
   }, [isCreating]);
 
+  /**
+   * Handle session creation with validation and error handling
+   * Validates name uniqueness and calls parent callback
+   */
   const handleCreateSession = async () => {
     if (!newSessionName.trim()) return;
     
@@ -51,6 +106,10 @@ const SessionManager: React.FC<SessionManagerProps> = ({
     }
   };
 
+  /**
+   * Handle keyboard shortcuts for session creation
+   * Enter to save, Escape to cancel
+   */
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -63,11 +122,19 @@ const SessionManager: React.FC<SessionManagerProps> = ({
     }
   };
 
+  /**
+   * Handle input changes with error clearing
+   * Clears errors as user types to provide immediate feedback
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewSessionName(e.target.value);
     setError(null);
   };
 
+  /**
+   * Start session creation mode
+   * Focuses input and resets state
+   */
   const startCreating = () => {
     setIsCreating(true);
     setNewSessionName('');
@@ -77,6 +144,10 @@ const SessionManager: React.FC<SessionManagerProps> = ({
     }, 0);
   };
 
+  /**
+   * Cancel session creation
+   * Resets all creation state
+   */
   const cancelCreating = () => {
     setIsCreating(false);
     setNewSessionName('');
@@ -89,6 +160,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({
       className="flex items-center gap-2 mb-2"
     >
       {isCreating ? (
+        /* Session creation mode */
         <div className="flex-1 flex items-center gap-2">
           <div className="flex-1">
             <input
@@ -121,6 +193,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({
           </button>
         </div>
       ) : (
+        /* Normal session management mode */
         <div className="flex-1 flex items-center gap-2">
           <select
             value={currentSession.id}

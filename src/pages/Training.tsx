@@ -1,3 +1,52 @@
+/**
+ * Training.tsx - Full Solve Practice Interface
+ * 
+ * The main training interface for complete speedcube solve practice. Integrates
+ * scramble generation, timer functionality, session management, statistics
+ * tracking, and personal best detection into a cohesive practice environment.
+ * 
+ * Core Features:
+ * - Random scramble generation with visual preview
+ * - Precision timer with inspection time support
+ * - Session-based organization and statistics
+ * - Real-time statistics calculation (ao5, ao12, ao50, ao100)
+ * - Personal best detection with celebration animations
+ * - Comprehensive solve history management
+ * - Mobile-optimized responsive design
+ * 
+ * Architecture:
+ * - Uses Dexie live queries for real-time data updates
+ * - Implements optimistic UI updates for responsiveness
+ * - Manages complex state interactions between timer and data
+ * - Handles input context detection to prevent timer interference
+ * 
+ * Data Flow:
+ * 1. User starts solve with scramble
+ * 2. Timer records precise solve time
+ * 3. Solve saved to database with session association
+ * 4. Statistics automatically recalculated
+ * 5. Personal bests checked and updated
+ * 6. UI updates reflect new data
+ * 
+ * Mobile Optimizations:
+ * - Touch-friendly controls and layouts
+ * - Responsive statistics display
+ * - Optimized scramble presentation
+ * - Gesture prevention during timing
+ * 
+ * Performance Considerations:
+ * - Efficient database queries with indexes
+ * - Memoized calculations for statistics
+ * - Debounced scroll detection
+ * - Cleanup of intervals and listeners
+ * 
+ * User Experience:
+ * - Seamless workflow from scramble to solve
+ * - Clear visual feedback for all states
+ * - Comprehensive solve management
+ * - Celebration of achievements
+ */
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import ReactConfetti from "react-confetti";
@@ -25,10 +74,13 @@ import { db } from "../db";
 import { Session, Solve, PersonalBest } from "../types";
 
 const Training: React.FC = () => {
+  // Scramble management state
   const [currentScramble, setCurrentScramble] = useState("");
   const [editingScramble, setEditingScramble] = useState(false);
   const [tempScramble, setTempScramble] = useState("");
   const [showScramble, setShowScramble] = useState(true);
+  
+  // UI state management
   const [selectedSolve, setSelectedSolve] = useState<Solve | null>(null);
   const [showCopyConfirm, setShowCopyConfirm] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -37,17 +89,19 @@ const Training: React.FC = () => {
     width: window.innerWidth,
     height: window.innerHeight,
   });
+  
+  // DOM refs for focus management and scroll detection
   const scrambleInputRef = useRef<HTMLInputElement>(null);
   const scrambleContainerRef = useRef<HTMLDivElement>(null);
-
+  const timerContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Performance tracking refs
   const justAddedSolveRef = useRef(false);
   const prevAllSolvesCountRef = useRef(0);
-
-  const timerContainerRef = useRef<HTMLDivElement>(null);
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Confirmation modal state
+  // Confirmation modal state for destructive actions
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -61,12 +115,17 @@ const Training: React.FC = () => {
     onConfirm: () => {},
   });
 
+  /**
+   * Live database queries using Dexie React hooks
+   * Provides real-time updates when data changes
+   */
   const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
   const currentSession = useLiveQuery(() => db.getCurrentSession());
   const userSettings = useLiveQuery(() => db.userSettings.get(1));
   const allSolves = useLiveQuery(() => db.solves.toArray()) || [];
   const personalBests = useLiveQuery(() => db.personalBests.toArray()) || [];
   
+  // Session-specific solves query
   const solves =
     useLiveQuery(
       () =>
@@ -80,7 +139,10 @@ const Training: React.FC = () => {
       [currentSession?.id],
     ) || [];
 
-  // Mark scramble container as having active input when editing
+  /**
+   * Mark scramble container as having active input when editing
+   * Prevents timer activation during scramble editing
+   */
   useEffect(() => {
     if (scrambleContainerRef.current) {
       if (editingScramble) {
@@ -91,6 +153,10 @@ const Training: React.FC = () => {
     }
   }, [editingScramble]);
 
+  /**
+   * Scroll detection for mobile optimization
+   * Tracks when user is scrolling to prevent timer interference
+   */
   useEffect(() => {
     const handleScroll = () => {
       isScrollingRef.current = true;
@@ -114,13 +180,12 @@ const Training: React.FC = () => {
     };
   }, []);
 
-  // Global keydown handler for Training page
+  /**
+   * Global keyboard event handler for Training page
+   * Prevents spacebar timer activation during text input
+   */
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Only prevent spacebar when:
-      // 1. It's a space key press
-      // 2. We're not editing scramble
-      // 3. No text input is focused
       if (e.code === "Space") {
         const activeElement = document.activeElement;
         const isTextInput = activeElement?.tagName === 'INPUT' || 
@@ -140,6 +205,10 @@ const Training: React.FC = () => {
     };
   }, [editingScramble]);
 
+  /**
+   * Get inspection settings for current session
+   * Falls back to global defaults if session settings not available
+   */
   const getInspectionSettings = () => {
     if (!currentSession || !userSettings) {
       return { useInspection: true, inspectionTime: 15 };
@@ -153,12 +222,18 @@ const Training: React.FC = () => {
 
   const { useInspection, inspectionTime } = getInspectionSettings();
 
+  /**
+   * Format solve time for display with penalty handling
+   */
   const getDisplayTime = (solve: Solve): string => {
     if (solve.penalty === "DNF") return "DNF";
     const time = solve.penalty === "+2" ? solve.time + 2000 : solve.time;
     return `${(time / 1000).toFixed(2)}s`;
   };
 
+  /**
+   * Get formatted solve time for timer display
+   */
   const getFormattedSolveTime = (solve: Solve | null): string => {
     if (!solve) return "0.00";
     if (solve.penalty === "DNF") return "DNF";
@@ -166,12 +241,24 @@ const Training: React.FC = () => {
     return `${(time / 1000).toFixed(2)}`;
   };
 
+  /**
+   * Get the most recent solve time for timer display
+   * Updates automatically when solves change
+   */
   const lastSolveTime = useMemo(() => {
     return solves.length > 0 ? getFormattedSolveTime(solves[0]) : "0.00";
   }, [solves]);
 
+  /**
+   * Calculate current session statistics
+   * Memoized for performance with large solve sets
+   */
   const currentStats = calculateSessionStats(solves, allSolves);
 
+  /**
+   * Find the solve that corresponds to the best single
+   * Used for clickable best single display
+   */
   const bestSingleSolve = useMemo(() => {
     if (!currentStats.bestSingle || !allSolves.length) return null;
     
@@ -181,11 +268,17 @@ const Training: React.FC = () => {
     }) || null;
   }, [currentStats.bestSingle, allSolves]);
 
+  /**
+   * Get session name for a solve (used in solve details modal)
+   */
   const getSessionName = (sessionId: string): string => {
     const session = sessions.find(s => s.id === sessionId);
     return session?.name || "Unknown Session";
   };
 
+  /**
+   * Update window dimensions for confetti animation
+   */
   useEffect(() => {
     const handleResize = () => {
       setWindowDimensions({
@@ -198,6 +291,10 @@ const Training: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  /**
+   * Track solve count changes to detect new solves
+   * Used for personal best detection timing
+   */
   useEffect(() => {
     const currentLength = allSolves?.length || 0;
 
@@ -209,6 +306,10 @@ const Training: React.FC = () => {
     prevAllSolvesCountRef.current = currentLength;
   }, [allSolves]);
 
+  /**
+   * Personal best detection and celebration
+   * Checks for new records after solve completion
+   */
   useEffect(() => {
     if (!justAddedSolveRef.current || !allSolves || allSolves.length === 0)
       return;
@@ -217,6 +318,7 @@ const Training: React.FC = () => {
       const solveCount = allSolves.length;
       const currentPersonalBests = await db.personalBests.toArray();
 
+      // Get current best for each category
       const currentPBs: Record<string, number> = {};
       currentPersonalBests.forEach((pb) => {
         if (!currentPBs[pb.type] || pb.time < currentPBs[pb.type]) {
@@ -226,6 +328,7 @@ const Training: React.FC = () => {
 
       const newRecords = [];
 
+      // Check single (after 5 solves minimum)
       if (
         solveCount >= 5 &&
         currentStats.bestSingle &&
@@ -236,6 +339,7 @@ const Training: React.FC = () => {
         await savePersonalBest("single", currentStats.bestSingle);
       }
 
+      // Check averages
       if (
         solveCount >= 5 &&
         currentStats.bestAo5 &&
@@ -272,6 +376,7 @@ const Training: React.FC = () => {
         await savePersonalBest("ao100", currentStats.bestAo100);
       }
 
+      // Show celebration for new records
       if (newRecords.length > 0) {
         setNewRecord(newRecords.join(", "));
         setShowConfetti(true);
@@ -286,6 +391,9 @@ const Training: React.FC = () => {
     justAddedSolveRef.current = false;
   }, [currentStats, allSolves]);
 
+  /**
+   * Save personal best record to database
+   */
   const savePersonalBest = async (type: string, time: number) => {
     if (!currentSession) return;
 
@@ -314,12 +422,18 @@ const Training: React.FC = () => {
     await db.personalBests.add(pb);
   };
 
+  /**
+   * Generate new random scramble
+   */
   const generateNewScramble = () => {
     setCurrentScramble(generateScramble());
     setShowScramble(true);
     setEditingScramble(false);
   };
 
+  /**
+   * Get solve count display with DNF handling
+   */
   const getSolveCount = (): string => {
     const dnfCount = solves.filter( (s: Solve) => s.penalty === "DNF").length;
     if (dnfCount > 0) {
@@ -328,6 +442,9 @@ const Training: React.FC = () => {
     return `${solves.length}`;
   };
 
+  /**
+   * Session management functions
+   */
   const handleSessionChange = async (sessionId: string) => {
     try {
       await db.setCurrentSession(sessionId);
@@ -354,6 +471,9 @@ const Training: React.FC = () => {
     await handleSessionChange(sessionId);
   };
 
+  /**
+   * Show confirmation modal for session deletion
+   */
   const showDeleteSessionConfirmation = (sessionId: string, sessionName: string) => {
     if (sessions.length <= 1) {
       setConfirmModal({
@@ -404,6 +524,9 @@ const Training: React.FC = () => {
     }
   };
 
+  /**
+   * Scramble management functions
+   */
   const handleCopyScramble = async () => {
     try {
       await navigator.clipboard.writeText(currentScramble);
@@ -438,12 +561,19 @@ const Training: React.FC = () => {
     }
   };
 
+  /**
+   * Retry solve with same scramble
+   */
   const handleRetrySolve = (solve: Solve) => {
     setCurrentScramble(solve.scramble);
     setShowScramble(true);
     setEditingScramble(false);
   };
 
+  /**
+   * Save completed solve to database
+   * Triggers statistics recalculation and personal best detection
+   */
   const handleSolveComplete = async (time: number) => {
     if (!currentSession) return;
 
@@ -474,6 +604,9 @@ const Training: React.FC = () => {
     generateNewScramble();
   };
 
+  /**
+   * Solve management functions
+   */
   const showDeleteSolveConfirmation = (solveId: number) => {
     setConfirmModal({
       isOpen: true,
@@ -535,12 +668,18 @@ const Training: React.FC = () => {
     await db.solves.update(solveId, { penalty });
   };
 
+  /**
+   * Handle clicking on best single to view details
+   */
   const handleBestSingleClick = () => {
     if (bestSingleSolve) {
       setSelectedSolve(bestSingleSolve);
     }
   };
 
+  /**
+   * Inspection settings handlers
+   */
   const handleInspectionToggle = async (newUseInspection: boolean) => {
     if (!currentSession) return;
 
@@ -559,6 +698,9 @@ const Training: React.FC = () => {
     });
   };
 
+  /**
+   * Initialize with first scramble
+   */
   useEffect(() => {
     generateNewScramble();
   }, []);
@@ -571,6 +713,9 @@ const Training: React.FC = () => {
     });
   }, [currentSession?.id, solves.length, lastSolveTime]);
 
+  /**
+   * Get latest single time for current session stats
+   */
   const latestSingle =
     solves.length > 0
       ? solves[0].penalty === "DNF"
@@ -580,6 +725,7 @@ const Training: React.FC = () => {
           : solves[0].time
       : null;
 
+  // Loading state
   if (!currentSession || !sessions.length) {
     return (
       <div className="min-h-screen bg-gray-900 text-white p-4 flex items-center justify-center">
@@ -593,6 +739,7 @@ const Training: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4">
+      {/* Confetti celebration for personal bests */}
       {showConfetti && (
         <div className="fixed inset-0 z-50 pointer-events-none">
           <ReactConfetti
@@ -611,6 +758,7 @@ const Training: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main content area */}
         <div className="lg:col-span-2">
           {showScramble && (
             <div className="space-y-6">
@@ -625,6 +773,7 @@ const Training: React.FC = () => {
                 }}
               />
 
+              {/* Scramble section */}
               <div className="bg-gray-800 rounded-lg p-6" ref={scrambleContainerRef}>
                 {/* Hide scramble label on mobile */}
                 <div className="hidden md:flex justify-between items-center mb-6">
@@ -714,6 +863,7 @@ const Training: React.FC = () => {
             </div>
           )}
 
+          {/* Timer section */}
           <div className="mt-6" ref={timerContainerRef}>
             <Timer
               key={`timer-${currentSession?.id}-${useInspection}-${inspectionTime}`}
@@ -731,6 +881,7 @@ const Training: React.FC = () => {
           </div>
         </div>
 
+        {/* Statistics and history sidebar */}
         {showScramble && (
           <div className="space-y-4">
             {/* Desktop Stats - Keep original layout */}
@@ -963,6 +1114,7 @@ const Training: React.FC = () => {
               </div>
             </div>
 
+            {/* Solve History */}
             <div className="bg-gray-800 rounded-lg overflow-hidden">
               <div className="px-3 py-2 bg-gray-700 flex justify-between items-center">
                 <h2 className="text-sm font-medium">Solve History ( {getSolveCount()} )</h2>
@@ -1123,6 +1275,7 @@ const Training: React.FC = () => {
         )}
       </div>
 
+      {/* Solve Details Modal */}
       {selectedSolve && (
         <SolveDetailsModal
           solve={selectedSolve}
@@ -1139,6 +1292,7 @@ const Training: React.FC = () => {
         />
       )}
 
+      {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
