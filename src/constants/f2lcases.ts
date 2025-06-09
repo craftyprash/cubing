@@ -34,11 +34,10 @@ export const F2LGroups = {
 
 // F2L case definitions
 export const F2LCases = {
-  // Connected Pairs (10 cases)
   "F2L-1": {
     id: "F2L-1",
     name: "F2L 1",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.FREE_PAIRS.id,
     setupMoves: "F R' F' R",
     algorithms: {
       main: "U R U' R'",
@@ -49,7 +48,7 @@ export const F2LCases = {
   "F2L-2": {
     id: "F2L-2",
     name: "F2L 2",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.FREE_PAIRS.id,
     setupMoves: "R' F R F'",
     algorithms: {
       main: "F R' F' R",
@@ -60,7 +59,7 @@ export const F2LCases = {
   "F2L-3": {
     id: "F2L-3",
     name: "F2L 3",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.FREE_PAIRS.id,
     setupMoves: "F' U F",
     algorithms: {
       main: "F' U' F",
@@ -69,7 +68,7 @@ export const F2LCases = {
   "F2L-4": {
     id: "F2L-4",
     name: "F2L 4",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.FREE_PAIRS.id,
     setupMoves: "R U' R'",
     algorithms: {
       main: "R U R'",
@@ -78,7 +77,7 @@ export const F2LCases = {
   "F2L-5": {
     id: "F2L-5",
     name: "F2L 5",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.DISCONNECTED_PAIRS.id,
     setupMoves: "R U R' U2' R U' R' U",
     algorithms: {
       main: "U' R U R' U2 R U' R'",
@@ -88,7 +87,7 @@ export const F2LCases = {
   "F2L-6": {
     id: "F2L-6",
     name: "F2L 6",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.DISCONNECTED_PAIRS.id,
     setupMoves: "F' U' F U2' F' U F U'",
     algorithms: {
       main: "U2 F' L' U' L U2' F",
@@ -98,7 +97,7 @@ export const F2LCases = {
   "F2L-7": {
     id: "F2L-7",
     name: "F2L 7",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.DISCONNECTED_PAIRS.id,
     setupMoves: "R U R' U2' R U2' R' U",
     algorithms: {
       main: "U' R U2' R' U2 R U' R'",
@@ -117,7 +116,7 @@ export const F2LCases = {
   "F2L-9": {
     id: "F2L-9",
     name: "F2L 9",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.DISCONNECTED_PAIRS.id,
     setupMoves: "F' U F U' R U R' U",
     algorithms: {
       main: "U' R U' R' U F' U' F",
@@ -127,7 +126,7 @@ export const F2LCases = {
   "F2L-10": {
     id: "F2L-10",
     name: "F2L 10",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.DISCONNECTED_PAIRS.id,
     setupMoves: "R U' R' U' R U' R' U",
     algorithms: {
       main: "U' R U R' U R U R'",
@@ -135,11 +134,10 @@ export const F2LCases = {
     }
   },
 
-  // Corner in Slot (6 cases)
   "F2L-11": {
     id: "F2L-11",
     name: "F2L 11",
-    group: F2LGroups.CORNER_IN_SLOT.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "F' U F U' R U2' R' U",
     algorithms: {
       main: "F' U L' U2 L U2' F",
@@ -148,7 +146,7 @@ export const F2LCases = {
   "F2L-12": {
     id: "F2L-12",
     name: "F2L 12",
-    group: F2LGroups.CORNER_IN_SLOT.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U R' U2' R U R' U' R U R'",
     algorithms: {
       main: "R' U2' R2 U R2' U R",
@@ -158,7 +156,7 @@ export const F2LCases = {
   "F2L-13": {
     id: "F2L-13",
     name: "F2L 13",
-    group: F2LGroups.CORNER_IN_SLOT.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "r U2' R' U R U' R' U M",
     algorithms: {
       main: "d R' U R U' R' U' R",
@@ -168,7 +166,7 @@ export const F2LCases = {
   "F2L-14": {
     id: "F2L-14",
     name: "F2L 14",
-    group: F2LGroups.CORNER_IN_SLOT.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U' R' U' R U R' U",
     algorithms: {
       main: "U' R U' R' U R U R'",
@@ -177,7 +175,7 @@ export const F2LCases = {
   "F2L-15": {
     id: "F2L-15",
     name: "F2L 15",
-    group: F2LGroups.CORNER_IN_SLOT.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U R' U' R U R' U2' R U' R'",
     algorithms: {
       main: "R' D' R U' R' D R U R U' R'",
@@ -187,18 +185,17 @@ export const F2LCases = {
   "F2L-16": {
     id: "F2L-16",
     name: "F2L 16",
-    group: F2LGroups.CORNER_IN_SLOT.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "F' U F U2' R U R'",
     algorithms: {
       main: "R U' R' U2 F' U' F",
     }
   },
 
-  // Disconnected Pairs (10 cases)
   "F2L-17": {
     id: "F2L-17",
     name: "F2L 17",
-    group: F2LGroups.DISCONNECTED_PAIRS.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U' R' U R U2' R'",
     algorithms: {
       main: "R U2' R' U' R U R'",
@@ -207,7 +204,7 @@ export const F2LCases = {
   "F2L-18": {
     id: "F2L-18",
     name: "F2L 18",
-    group: F2LGroups.DISCONNECTED_PAIRS.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U R' U' R U R' F R' F' R",
     algorithms: {
       main: "(R' F R F') R U' R' U R U' R'",
@@ -253,7 +250,7 @@ export const F2LCases = {
   "F2L-23": {
     id: "F2L-23",
     name: "F2L 23",
-    group: F2LGroups.DISCONNECTED_PAIRS.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U' R' U R U' R' U2' R U' R'",
     algorithms: {
       main: "U R U' R' U' R U' R' U R U' R'",
@@ -263,7 +260,7 @@ export const F2LCases = {
   "F2L-24": {
     id: "F2L-24",
     name: "F2L 24",
-    group: F2LGroups.DISCONNECTED_PAIRS.id,
+    group: F2LGroups.CONNECTED_PAIRS.id,
     setupMoves: "R U R' F R U R' U' F'",
     algorithms: {
       main: "F U R U' R' F' R U' R'",
@@ -272,7 +269,7 @@ export const F2LCases = {
   "F2L-25": {
     id: "F2L-25",
     name: "F2L 25",
-    group: F2LGroups.DISCONNECTED_PAIRS.id,
+    group: F2LGroups.CORNER_IN_SLOT.id,
     setupMoves: "F' R U R' U' R' F R",
     algorithms: {
       main: "U' R' F R F' R U R'",
@@ -282,7 +279,7 @@ export const F2LCases = {
   "F2L-26": {
     id: "F2L-26",
     name: "F2L 26",
-    group: F2LGroups.DISCONNECTED_PAIRS.id,
+    group: F2LGroups.CORNER_IN_SLOT.id,
     setupMoves: "F' U' F U R U R' U'",
     algorithms: {
       main: "U R U' R' F R' F' R",
@@ -290,11 +287,10 @@ export const F2LCases = {
     }
   },
 
-  // Edge in Slot (6 cases)
   "F2L-27": {
     id: "F2L-27",
     name: "F2L 27",
-    group: F2LGroups.EDGE_IN_SLOT.id,
+    group: F2LGroups.CORNER_IN_SLOT.id,
     setupMoves: "R U R' U' R U R'",
     algorithms: {
       main: "R U' R' U R U' R'",
@@ -303,7 +299,7 @@ export const F2LCases = {
   "F2L-28": {
     id: "F2L-28",
     name: "F2L 28",
-    group: F2LGroups.EDGE_IN_SLOT.id,
+    group: F2LGroups.CORNER_IN_SLOT.id,
     setupMoves: "R' F R F' U R U' R'",
     algorithms: {
       main: "U F' L' U2 L U' F",
@@ -313,7 +309,7 @@ export const F2LCases = {
   "F2L-29": {
     id: "F2L-29",
     name: "F2L 29",
-    group: F2LGroups.EDGE_IN_SLOT.id,
+    group: F2LGroups.CORNER_IN_SLOT.id,
     setupMoves: "F R' F' R F R' F' R",
     algorithms: {
       main: "R' F R F' R' F R F'",
@@ -323,7 +319,7 @@ export const F2LCases = {
   "F2L-30": {
     id: "F2L-30",
     name: "F2L 30",
-    group: F2LGroups.EDGE_IN_SLOT.id,
+    group: F2LGroups.CORNER_IN_SLOT.id,
     setupMoves: "R U' R' U R U' R'",
     algorithms: {
       main: "R U R' U' R U R'",
@@ -350,11 +346,10 @@ export const F2LCases = {
     }
   },
 
-  // Free Pairs (4 cases)
   "F2L-33": {
     id: "F2L-33",
     name: "F2L 33",
-    group: F2LGroups.FREE_PAIRS.id,
+    group: F2LGroups.EDGE_IN_SLOT.id,
     setupMoves: "R U R' U2' R U R' U",
     algorithms: {
       main: "U' R U' R' U2 R U' R'",
@@ -363,7 +358,7 @@ export const F2LCases = {
   "F2L-34": {
     id: "F2L-34",
     name: "F2L 34",
-    group: F2LGroups.FREE_PAIRS.id,
+    group: F2LGroups.EDGE_IN_SLOT.id,
     setupMoves: "R U' R' U2' R U' R' U'",
     algorithms: {
       main: "U R' D' R U' R' D R",
@@ -373,7 +368,7 @@ export const F2LCases = {
   "F2L-35": {
     id: "F2L-35",
     name: "F2L 35",
-    group: F2LGroups.FREE_PAIRS.id,
+    group: F2LGroups.EDGE_IN_SLOT.id,
     setupMoves: "F' U F U' R U' R' U",
     algorithms: {
       main: "U' R U R' U F' U' F",
@@ -383,7 +378,7 @@ export const F2LCases = {
   "F2L-36": {
     id: "F2L-36",
     name: "F2L 36",
-    group: F2LGroups.FREE_PAIRS.id,
+    group: F2LGroups.EDGE_IN_SLOT.id,
     setupMoves: "R U' R' U2' F R' F' R U2'",
     algorithms: {
       main: "U F' U' F U' R U R'",
