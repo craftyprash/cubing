@@ -106,7 +106,7 @@ export const F2LCases = {
   "F2L-8": {
     id: "F2L-8",
     name: "F2L 8",
-    group: F2LGroups.CONNECTED_PAIRS.id,
+    group: F2LGroups.DISCONNECTED_PAIRS.id,
     setupMoves: "r' U' R2 U' R2' U2' r",
     algorithms: {
       main: "d R' U2' R U R' U2' R",
