@@ -75,7 +75,7 @@ enum TimerState {
 const Timer: React.FC<TimerProps> = ({
   onComplete,
   inspectionTime = 15,
-  useInspection: initialUseInspection = true,
+  useInspection: initialUseInspection = false,
   isFullSolve = false,
   onTimerStateChange,
   onInspectionToggle,
