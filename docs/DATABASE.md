@@ -106,7 +106,7 @@ await db.sessions.put({
   createdAt: new Date(),
   updatedAt: new Date(),
   solveCount: 0,
-  useInspection: true,
+  useInspection: false,
   inspectionTime: 15
 });
 
@@ -182,7 +182,7 @@ await db.userSettings.add({
   id: 1,
   theme: "dark",
   timerStartDelay: 250,
-  useInspectionTime: true,
+  useInspectionTime: false,
   inspectionTime: 15,
   currentSessionId: "default"
 });
@@ -331,7 +331,7 @@ this.version(2).upgrade(async (tx) => {
   const sessions = await tx.table("sessions").toArray();
   for (const session of sessions) {
     await tx.table("sessions").update(session.id, {
-      useInspection: true, // Default value
+      useInspection: false, // Default value
       inspectionTime: 15
     });
   }

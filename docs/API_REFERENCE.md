@@ -292,7 +292,7 @@ interface TimerProps {
 <Timer
   onComplete={handleSolveComplete}
   inspectionTime={15}
-  useInspection={true}
+  useInspection={false}
   onTimerStateChange={(state) => setShowScramble(state === 'idle')}
 />
 ```
