@@ -52,6 +52,7 @@
 
 // Utility for generating cube visualizations
 export interface VisualCubeOptions {
+  r?: string;
   size?: number;
   view?: 'plan' | 'trans' | 'oblique';
   stage?: 'f2l' | 'oll' | 'pll';
@@ -63,6 +64,7 @@ export interface VisualCubeOptions {
 }
 
 const DEFAULT_OPTIONS: VisualCubeOptions = {
+  r: 'y29x-26',
   size: 200,
   view: 'plan',
   fmt: 'png',
@@ -88,6 +90,7 @@ export const generateVisualCubeUrl = (options: VisualCubeOptions): string => {
   if (finalOptions.stage) params.append('stage', finalOptions.stage);
   if (finalOptions.alg) params.append('alg', finalOptions.alg);
   if (finalOptions.sch) params.append('sch', finalOptions.sch);
+  if (finalOptions.r) params.append('r', finalOptions.r);
   params.append('bg', 't');
   
   return `${baseUrl}?${params.toString()}`;

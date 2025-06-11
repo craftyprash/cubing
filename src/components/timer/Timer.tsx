@@ -94,6 +94,12 @@ const Timer: React.FC<TimerProps> = ({
   const [touchStartTime, setTouchStartTime] = useState<number | null>(null);
   const [useInspection, setUseInspection] = useState(initialUseInspection);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Add this state to track if touch is moving
+  const [isTouchMoving, setIsTouchMoving] = useState(false);
+
+  // Add this ref to track touch position
+  const touchPosRef = useRef({ x: 0, y: 0 });
   
   // Performance and control refs
   const lastStopTimeRef = useRef<number>(0);
@@ -350,15 +356,41 @@ const Timer: React.FC<TimerProps> = ({
 
     e.preventDefault();
     e.stopPropagation();
+    
+    // Record initial touch position
+    const touch = e.touches[0];
+    touchPosRef.current = { x: touch.clientX, y: touch.clientY };
+    setIsTouchMoving(false);
     isHoldingRef.current = true;
     triggerStartAction();
   }, [timerState, useInspection, inspectionTime]);
+
+  const handleTimerAreaTouchMove = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    // smaller values will make the timer more sensitive to accidental movements, 
+    // while larger values might make it less responsive to actual timer starts
+    const moveThreshold = 10; // pixels
+    
+    // Calculate distance moved
+    const dx = Math.abs(touch.clientX - touchPosRef.current.x);
+    const dy = Math.abs(touch.clientY - touchPosRef.current.y);
+    
+    // If movement exceeds threshold, cancel timer start
+    if (dx > moveThreshold || dy > moveThreshold) {
+      setIsTouchMoving(true);
+      if (timerState === TimerState.READY || timerState === TimerState.INSPECTION_READY) {
+        updateTimerState(TimerState.IDLE);
+      }
+      isHoldingRef.current = false;
+    }
+  }, [timerState]);
 
   const handleTimerAreaTouchEnd = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
     const isExcludedButton = target.closest('[data-timer-exclude]');
     
-    if (isExcludedButton) {
+    if (isExcludedButton || isTouchMoving) {
+      setIsTouchMoving(false);
       return;
     }
 
@@ -370,7 +402,7 @@ const Timer: React.FC<TimerProps> = ({
       holdTimeoutRef.current = null;
     }
     triggerEndAction();
-  }, [timerState, touchStartTime]);
+  }, [timerState, touchStartTime, isTouchMoving]);
 
   /**
    * Mouse event handlers for desktop devices
@@ -519,6 +551,7 @@ const Timer: React.FC<TimerProps> = ({
         <div
           className={getTimerClasses()}
           onTouchStart={handleTimerAreaTouchStart}
+          onTouchMove={handleTimerAreaTouchMove}
           onTouchEnd={handleTimerAreaTouchEnd}
           onMouseDown={handleTimerAreaMouseDown}
           onMouseUp={handleTimerAreaMouseUp}
