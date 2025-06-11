@@ -211,7 +211,7 @@ const Training: React.FC = () => {
    */
   const getInspectionSettings = () => {
     if (!currentSession || !userSettings) {
-      return { useInspection: true, inspectionTime: 15 };
+      return { useInspection: false, inspectionTime: 15 };
     }
 
     return {
