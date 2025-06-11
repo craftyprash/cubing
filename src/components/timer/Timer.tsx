@@ -369,7 +369,7 @@ const Timer: React.FC<TimerProps> = ({
     const touch = e.touches[0];
     // smaller values will make the timer more sensitive to accidental movements, 
     // while larger values might make it less responsive to actual timer starts
-    const moveThreshold = 10; // pixels
+    const moveThreshold = 6; // pixels
     
     // Calculate distance moved
     const dx = Math.abs(touch.clientX - touchPosRef.current.x);
