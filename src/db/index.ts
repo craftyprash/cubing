@@ -133,7 +133,7 @@ class CraftyCubingDB extends Dexie {
         theme: "light",
         timerStartDelay: 300,
         timerStopDelay: 0,
-        useInspectionTime: true,
+        useInspectionTime: false,
         inspectionTime: 15,
         showAlgorithmOnTraining: true,
         defaultTrainingMode: "full",
@@ -154,7 +154,7 @@ class CraftyCubingDB extends Dexie {
         createdAt: new Date(),
         updatedAt: new Date(),
         solveCount: 0,
-        useInspection: userSettings?.useInspectionTime ?? true,
+        useInspection: userSettings?.useInspectionTime ?? false,
         inspectionTime: userSettings?.inspectionTime ?? 15,
       });
     }
