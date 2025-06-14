@@ -500,9 +500,8 @@ export const OLLCases = {
     group: OLLGroups.AWKWARD_SHAPES.id,
     setupMoves: "F U R U' R' F' R U2' R' U' R U' R' y2'",
     algorithms: {
-      main: "R U R' U R U2' R' F R U R' U' F'",
-      alt1: "y F U R U' R' F' R U2 R' U' R U' R'",
-      alt2: "y2 L F' L' F L F' L' F L F' L'",
+      main: "y2 R U R' U R U2' R' F R U R' U' F'",
+      alt1: "y' S U' R' F' U' F U R S'",
     },
   },
   "OLL-42": {
