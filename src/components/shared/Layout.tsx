@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import IntroModal from './IntroModal';
+import { Analytics } from '@vercel/analytics/next';
+
 
 const Layout: React.FC = () => {
   const [showIntro, setShowIntro] = useState(false);
@@ -32,6 +34,7 @@ const Layout: React.FC = () => {
       </main>
       <Footer />
       <IntroModal isOpen={showIntro} onClose={handleCloseIntro} />
+      <Analytics />
     </div>
   );
 };
