@@ -74,15 +74,14 @@ export const OLLGroups = {
 
 // OLL case definitions
 export const OLLCases = {
-  // All Corners Oriented Cases
   "OLL-1": {
     id: "OLL-1",
     name: "OLL 1 Dot Case",
     group: OLLGroups.DOT_CASE.id,
     setupMoves: "F R' F' R U2' F R' F' R2' U2' R'",
     algorithms: {
-      main: "R U2 R2 F R F' U2 R' F R F'",
-      alt1: "y R U' R2 D' r U' r' D R2 U R'",
+      main: "R U2' R2' F R F' U2' R' F R F'",
+      alt1: "y R U' R2' D' r U' r' D R2 U R'",
       alt2: "f R U R' U' R f' U' r' U' R U M'",
     },
   },
@@ -93,7 +92,7 @@ export const OLLCases = {
     setupMoves: "f U R U' R' f' F U R U' R' F'",
     algorithms: {
       main: "y' R U' R2 D' r U r' D R2 U R'",
-      alt1: "F R U R' U' S R U R' U' f'",
+      alt1: "y2 f U R U' R' S' U R U' R' F'",
       alt2: "F R U R' U' F' f R U R' U' f'",
     },
   },
@@ -102,11 +101,11 @@ export const OLLCases = {
     id: "OLL-3",
     name: "OLL 3 Dot Case",
     group: OLLGroups.DOT_CASE.id,
-    setupMoves: "F U R U' R' F' U f U R U' R' f' y",
+    setupMoves: "F U R U' R' F' U f U R U' R' f' y2",
     algorithms: {
-      main: "y R' F2 R2 U2 R' F R U2 R2 F2 R",
-      alt1: "y' f R U R' U' f' U' F R U R' U' F'",
-      alt2: "r' R2 U R' U r U2 r' U M'",
+      main: "y' f U R U' R' S' R' F' R U R U' R'",
+      alt1: "R' F2 R2 U2' R' F R U2' R2' F2 R",
+      alt2: "y' r' R2 U R' U r U2' r' U M'",
     },
   },
   "OLL-4": {
@@ -115,9 +114,9 @@ export const OLLCases = {
     group: OLLGroups.DOT_CASE.id,
     setupMoves: "F U R U' R' F' U' f U R U' R' f' y",
     algorithms: {
-      main: "y' R' F2 R2 U2 R' F' R U2 R2 F2 R",
-      alt1: "y' f R U R' U' f' U F R U R' U' F'",
-      alt2: "R' F R F' U' S R' U' R U R S'",
+      main: "R' F R F' U' S R' U' R U R S'",
+      alt1: "y' R' F2 R2 U2' R' F' R U2' R2' F2 R",
+      alt2: "y' f R U R' U' f' U F R U R' U' F'",
     },
   },
   "OLL-5": {
@@ -126,9 +125,9 @@ export const OLLCases = {
     group: OLLGroups.SQUARE.id,
     setupMoves: "r' U' R U' R' U2' r",
     algorithms: {
-      main: "r' U2 R U R' U r",
-      alt1: "l' U2 L U L' U l",
-      alt2: "R U R' U' R' F R F' U F R U R' U' F'",
+      main: "r' U2' R U R' U r",
+      alt1: "y2 l' U2 L U L' U l",
+      alt2: "y2 R' F2 r U r' F R",
     },
   },
   "OLL-6": {
@@ -137,9 +136,9 @@ export const OLLCases = {
     group: OLLGroups.SQUARE.id,
     setupMoves: "r U R' U R U2' r'",
     algorithms: {
-      main: "r U2 R' U' R U' r'",
+      main: "r U2' R' U' R U' r'",
       alt1: "y2 l U2 L' U' L U' l'",
-      alt2: "y' F' r U R' U' r' F R",
+      alt2: "L F2 l' U' l F' L'",
     },
   },
   "OLL-7": {
@@ -148,9 +147,9 @@ export const OLLCases = {
     group: OLLGroups.LIGHTNING.id,
     setupMoves: "r U2' R' U' R U' r'",
     algorithms: {
-      main: "r U R' U R U2 r'",
-      alt1: "F R U R' U' F' U F R U R' U' F'",
-      alt2: "r' U' R U' R' U2 r y' r U2 R' U' R U' r'",
+      main: "r U R' U R U2' r'",
+      alt1: "L' U2 L U2 L F' L' F",
+      alt2: "y2 l U L' U L U2 l'",
     },
   },
   "OLL-8": {
@@ -159,9 +158,9 @@ export const OLLCases = {
     group: OLLGroups.LIGHTNING.id,
     setupMoves: "r' U2' R U R' U r y2'",
     algorithms: {
-      main: "r' U' R U' R' U2 r",
+      main: "R' F' r U' r' F2 R",
       alt1: "l' U' L U' L' U2 l",
-      alt2: "R U2 R' U' R U R' U' R U' R'",
+      alt2: "y2 r' U' R U' R' U2' r",
     },
   },
   "OLL-9": {
@@ -170,9 +169,8 @@ export const OLLCases = {
     group: OLLGroups.FISH_SHAPES.id,
     setupMoves: "F U R U' R2' F' R U R U' R' y'",
     algorithms: {
-      main: "R U R' U' R' F R2 U R' U' F'",
-      alt1: "L' U' L U L F' L2 U' L U F",
-      alt2: "r' R2 U R' U r U2 r' U M'",
+      main: "R U2' R' U' S' R U' R' S",
+      alt1: "y R U R' U' R' F R2 U R' U' F'",
     },
   },
   "OLL-10": {
@@ -181,9 +179,9 @@ export const OLLCases = {
     group: OLLGroups.FISH_SHAPES.id,
     setupMoves: "R U2' R' F R' F' R U' R U' R'",
     algorithms: {
-      main: "R U R' U R' F R F' R U2 R'",
-      alt1: "F R U R' U' F' U F R U R' U' F'",
-      alt2: "M U r' U2 R U R2 r",
+      main: "y F U F' R' F R U' R' F' R",
+      alt1: "y R' U2' R U S' R' U R S",
+      alt2: "R U R' U R' F R F' R U2' R'",
     },
   },
 
@@ -193,9 +191,7 @@ export const OLLCases = {
     group: OLLGroups.LIGHTNING.id,
     setupMoves: "M U' R U2' R' U' R U' R2' r",
     algorithms: {
-      main: "r U R' U R' F R F' R U2 r'",
-      alt1: "r' R2 U R' U R U2 R' U M'",
-      alt2: "M R U R' U R U2 R' U M'",
+      main: "S R U R' U R U2' R' U2 S'",
     },
   },
   "OLL-12": {
@@ -204,9 +200,8 @@ export const OLLCases = {
     group: OLLGroups.LIGHTNING.id,
     setupMoves: "F U R U' R' F' U' F U R U' R' F'",
     algorithms: {
-      main: "M' R' U' R U' R' U2 R U' R r'",
-      alt1: "F R U R' U' F' U F R U R' U' F'",
-      alt2: "r R2' U' R U' R' U2 R U' M",
+      main: "y S' L' U' L U' L' U2 L U2' S",
+      alt1: "y' S R' U' R U' R' U2' R U2 S'",
     },
   },
 
