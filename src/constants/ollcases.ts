@@ -205,16 +205,14 @@ export const OLLCases = {
     },
   },
 
-  // Line Cases
   "OLL-13": {
     id: "OLL-13",
     name: "Line 1",
     group: OLLGroups.KNIGHT_MOVE.id,
     setupMoves: "F' U' F r U' r' U r U r'",
     algorithms: {
-      main: "F U R U' R2 F' R U R U' R'",
-      alt1: "r U' r' U' r U r' F' U F",
-      alt2: "F U R U2 R' U' R U R' F'",
+      main: "F U R U2' R' U' R U R' F'",
+      alt1: "F U R U' R2' F' R U R U' R'",
     },
   },
   "OLL-14": {
@@ -224,8 +222,8 @@ export const OLLCases = {
     setupMoves: "F U F' R' F R U' R' F' R",
     algorithms: {
       main: "R' F R U R' F' R F U' F'",
-      alt1: "r' U r U r' U' r y R U' R'",
-      alt2: "F' U' L' U2 L U L' U' L F",
+      alt1: "r U R' U' r' F R2 U R' U' F'",
+      alt2: "F' U' L' U L2 F L' U' L' U L",
     },
   },
   "OLL-15": {
@@ -234,8 +232,8 @@ export const OLLCases = {
     group: OLLGroups.KNIGHT_MOVE.id,
     setupMoves: "r' U' r U' R' U R r' U r",
     algorithms: {
-      main: "r' U' r R' U' R U r' U r",
-      alt1: "l' U' l L' U' L U l' U l",
+      main: "y2 R' F' R r' F' r U R' F R",
+      alt1: "y2 R' F' R L' U' L U R' F R",
       alt2: "r' U' M' U' R U r' U r",
     },
   },
@@ -245,22 +243,18 @@ export const OLLCases = {
     group: OLLGroups.KNIGHT_MOVE.id,
     setupMoves: "r U r' U R U' R' r U' r'",
     algorithms: {
-      main: "r U r' R U R' U' r U' r'",
-      alt1: "l U l' L U L' U' l U' l'",
-      alt2: "r U M U R' U' r U' r'",
+      main: "r U M U R' U' r U' r'",
+      alt1: "r U r' R U R' U' r U' r'",
     },
   },
-
-  // P Shapes
   "OLL-17": {
     id: "OLL-17",
     name: "P 1",
     group: OLLGroups.DOT_CASE.id,
     setupMoves: "F R' F' R U2' F R' F' R U' R U' R'",
     algorithms: {
-      main: "F R' F' R2 r' U R U' R' U' M'",
+      main: "y2 F R' F' R U S' R U' R' S",
       alt1: "R U R' U R' F R F' U2 R' F R F'",
-      alt2: "(R U R' U) (R' F R F') R U2 R'",
     },
   },
   "OLL-18": {
@@ -269,9 +263,8 @@ export const OLLCases = {
     group: OLLGroups.DOT_CASE.id,
     setupMoves: "r' U2' R U R' U r2' U2' R' U' R U' r'",
     algorithms: {
-      main: "r U R' U R U2 r2 U' R U' R' U2 r",
-      alt1: "F R U R' U y' R' U2 R' F R F'",
-      alt2: "r' U' R U' R' U2 r2 U R' U R U2 r'",
+      main: "y F S' R U' R' S R U2' R' U' F'",
+      alt1: "r U R' U R U2' r2' U' R U' R' U2' r",
     },
   },
   "OLL-19": {
@@ -280,9 +273,7 @@ export const OLLCases = {
     group: OLLGroups.DOT_CASE.id,
     setupMoves: "F R' F' R M U R U' R' U' M'",
     algorithms: {
-      main: "M U R U R' U' M' R' F R F'",
-      alt1: "r' R U R U R' U' r R2' F R F'",
-      alt2: "r' U2 R U R' U r2 U2 R' U' R U' r'",
+      main: "y S' R U R' S U' R' F R F'",
     },
   },
   "OLL-20": {
@@ -291,21 +282,19 @@ export const OLLCases = {
     group: OLLGroups.DOT_CASE.id,
     setupMoves: "r U R' U' M2' U R U' R' U' M'",
     algorithms: {
-      main: "M' U' R' U' R U M R F' R' F",
-      alt1: "r U2 R' U' R U' r2 U2' R U R' U r",
-      alt2: "S' L' U' L U L F' L' f",
+      main: "S R' U' R U R U R U' R' S'",
+      alt1: "S' R U R' S U' M' U R U' r'",
     },
   },
-
   "OLL-21": {
     id: "OLL-21",
     name: "W 1",
     group: OLLGroups.OCLL.id,
     setupMoves: "R U R' U R U' R' U R U2' R' y'",
     algorithms: {
-      main: "R U2 R' U' R U R' U' R U' R'",
-      alt1: "R' U' R U' R' U2 R U R U R'",
-      alt2: "r U R' U R U2 r' U' R U' R' U2 R U R'",
+      main: "R U R' U R U' R' U R U2' R'",
+      alt1: "y R U2' R' U' R U R' U' R U' R'",
+      alt2: "y F R U R' U' R U R' U' R U R' U' F'",
     },
   },
   "OLL-22": {
