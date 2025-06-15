@@ -510,21 +510,18 @@ export const OLLCases = {
     group: OLLGroups.AWKWARD_SHAPES.id,
     setupMoves: "F U R U' R' F' R' U2' R U R' U R",
     algorithms: {
-      main: "R' U' R U' R' U2 R F R U R' U' F'",
-      alt1: "L' U' L U' L' U2 L y' F R U R' U' F'",
-      alt2: "y' F' U' L' U L F L' U2 L U L' U L",
+      main: "R' U' R U' R' U2' R F R U R' U' F'",
+      alt1: "y F S' R U R' U' F' U S",
     },
   },
-
   "OLL-43": {
     id: "OLL-43",
     name: "T 1",
     group: OLLGroups.P_SHAPES.id,
     setupMoves: "f' U' L' U L f",
     algorithms: {
-      main: "F' U' L' U L F",
-      alt1: "y2 B' U' R' U R B",
-      alt2: "R' U' F' U F R",
+      main: "y R' U' F' U F R",
+      alt1: "f' L' U' L U f",
     },
   },
   "OLL-44": {
@@ -533,21 +530,19 @@ export const OLLCases = {
     group: OLLGroups.P_SHAPES.id,
     setupMoves: "f U R U' R' f'",
     algorithms: {
-      main: "F U R U' R' F'",
-      alt1: "y2 B U L U' L' B'",
-      alt2: "f R U R' U' f'",
+      main: "f R U R' U' f'",
+      alt1: "y2 F U R U' R' F'",
     },
   },
-
   "OLL-45": {
     id: "OLL-45",
     name: "Lightning 1",
     group: OLLGroups.T_SHAPES.id,
-    setupMoves: "F U R U' R' F's",
+    setupMoves: "F U R U' R' F'",
     algorithms: {
       main: "F R U R' U' F'",
-      alt1: "y2 f R U R' U' f'",
-      alt2: "y' F' L' U' L U F",
+      alt1: "y R' F' U' F U R",
+      alt2: "y2 f U R U' R' f'",
     },
   },
   "OLL-46": {
@@ -557,8 +552,8 @@ export const OLLCases = {
     setupMoves: "R' U' F R' F' R U R",
     algorithms: {
       main: "R' U' R' F R F' U R",
-      alt1: "y2 L U L F' L' F U' L'",
-      alt2: "F' L' U' L U L' U' L U F",
+      alt1: "R' F' U' F R U' R' U2 R",
+      alt2: "l' U2 L2 F' L' F U L' U l",
     },
   },
   "OLL-47": {
@@ -567,9 +562,9 @@ export const OLLCases = {
     group: OLLGroups.L_SHAPES.id,
     setupMoves: "F' U' L' U L U' L' U L F",
     algorithms: {
-      main: "R' U' R F R' F' R",
-      alt1: "F' U' L' U L F",
-      alt2: "y2 B' U' R' U R B",
+      main: "y2 f' U' r' F r U' r' F r f",
+      alt1: "y' F R' F' R U2 R U' R' U R U2' R'",
+      alt2: "F' L' U' L U L' U' L U F",
     },
   },
   "OLL-48": {
@@ -579,8 +574,7 @@ export const OLLCases = {
     setupMoves: "F U R U' R' U R U' R' F'",
     algorithms: {
       main: "F R U R' U' R U R' U' F'",
-      alt1: "y2 f R U R' U' R U R' U' f'",
-      alt2: "F R' F' R U2 R U2 R'",
+      alt1: "y2 f U R U' R' U R U' R' f'",
     },
   },
   "OLL-49": {
@@ -589,9 +583,9 @@ export const OLLCases = {
     group: OLLGroups.L_SHAPES.id,
     setupMoves: "r' U r2' U' r2' U' r2' U r' y2'",
     algorithms: {
-      main: "r U' r2 U r2 U r2 U' r",
-      alt1: "y2 l U' l2 U l2 U l2 U' l",
-      alt2: "R B' R2 F R2 B R2 F' R",
+      main: "R B' R2' F R2 B R2' F' R",
+      alt1: "l U' l2 U l2 U l2 U' l",
+      alt2: "y2 r U' r2' U r2 U r2 U' r",
     },
   },
   "OLL-50": {
@@ -600,9 +594,9 @@ export const OLLCases = {
     group: OLLGroups.L_SHAPES.id,
     setupMoves: "r U' r2' U r2' U r2' U' r",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "y2 R' F R2 B' R2 F' R2 B R'",
+      alt1: "r' U r2 U' r2 U' r2 U r'",
+      alt2: "y2 l' U l2 U' l2 U' l2 U l'",
     },
   },
   "OLL-51": {
@@ -611,9 +605,8 @@ export const OLLCases = {
     group: OLLGroups.LINE.id,
     setupMoves: "f U R U' R' U R U' R' f'",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "y2 F U R U' R' U R U' R' F'",
+      alt1: "f R U R' U' R U R' U' f'",
     },
   },
   "OLL-52": {
@@ -622,9 +615,9 @@ export const OLLCases = {
     group: OLLGroups.LINE.id,
     setupMoves: "F R U R' d R' U' R U' R'",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "y2 R' F' U' F U' R U R' U R",
+      alt1: "R U R' U R U' B U' B' R'",
+      alt2: "R U R' U R d' R U' R' F'",
     },
   },
   "OLL-53": {
@@ -633,9 +626,9 @@ export const OLLCases = {
     group: OLLGroups.L_SHAPES.id,
     setupMoves: "r' U2' R U R' U' R U R' U r",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "y2 R' F' r U' r' F r U' r' F2 R",
+      alt1: "r' U' R U' R' U R U' R' U2 r",
+      alt2: "y2 l' U' L U' L' U L U' L' U2 l",
     },
   },
   "OLL-54": {
@@ -644,9 +637,9 @@ export const OLLCases = {
     group: OLLGroups.L_SHAPES.id,
     setupMoves: "r U2' R' U' R U R' U' R U' r'",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "r U R' U R U' R' U R U2' r'",
+      alt1: "y' r U2 R' U' R U R' U' R U' r'",
+      alt2: "y2 l U L' U L U' L' U L U2 l'",
     },
   },
   "OLL-55": {
@@ -655,9 +648,9 @@ export const OLLCases = {
     group: OLLGroups.LINE.id,
     setupMoves: "F R' F' U2' R U R' U R2' U2' R'",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "y R' F U R U' R2 F' R2 U R' U' R",
+      alt1: "R U2 R2 U' R U' R' U2 F R F'",
+      alt2: "r U2 R2 F R F' U2 r' F R F'",
     },
   },
   "OLL-56": {
@@ -666,9 +659,9 @@ export const OLLCases = {
     group: OLLGroups.LINE.id,
     setupMoves: "r U r' R U R' U' R U R' U' r U' r'",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "R' F' R U' r' F r M' U' r' F2 R",
+      alt1: "r U r' U R U' R' U R U' R' r U' r'",
+      alt2: "F R U R' U' R F' r U R' U' r'",
     },
   },
   "OLL-57": {
@@ -677,9 +670,8 @@ export const OLLCases = {
     group: OLLGroups.ALL_CORNERS_ORIENTED.id,
     setupMoves: "r U R' U' M U R U' R'",
     algorithms: {
-      main: "r' U r2 U' r2 U' r2 U r'",
-      alt1: "y2 l' U l2 U' l2 U' l2 U l'",
-      alt2: "R' F R2 B' R2 F' R2 B R'",
+      main: "y' R U' R' S' R U R' S",
+      alt1: "R U R' U' M' U R U' r'",
     },
   },
 };
