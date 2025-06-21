@@ -14,12 +14,21 @@
  * - Detailed practice history with clickable solve times
  * - Visual cube state representations
  * - Mobile-optimized interface
+ * - Bookmarkable URLs for each stage and group
+ * 
+ * URL Structure:
+ * - /cases - Default view (F2L)
+ * - /cases/f2l - F2L cases
+ * - /cases/oll - OLL cases  
+ * - /cases/pll - PLL cases
+ * - /cases/f2l/connected_pairs - Specific group within stage
  * 
  * Architecture:
  * - Uses static case definitions from constants files
  * - Integrates with IndexedDB for statistics persistence
  * - Implements real-time statistics calculation
  * - Provides comprehensive algorithm management
+ * - URL-driven state management for bookmarking
  * 
  * Case Organization:
  * - F2L: 41 cases across 6 groups (Connected Pairs, Corner in Slot, etc.)
@@ -39,9 +48,11 @@
  * - Persistent case section state
  * - Comprehensive statistics display
  * - Mobile-friendly touch controls
+ * - Shareable URLs for specific sections
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Star, Edit2, Clock, Hash, RotateCcw } from "lucide-react";
 import { CubeCase, CubeStage, Algorithm } from "../types";
@@ -56,6 +67,10 @@ import { formatTimeForDisplay } from "../utils/timeUtils";
 import { db } from "../db";
 
 const CaseLibrary: React.FC = () => {
+  // URL parameters for routing
+  const { stage: urlStage, group: urlGroup } = useParams<{ stage?: string; group?: string }>();
+  const navigate = useNavigate();
+  
   // Core component state
   const [selectedStage, setSelectedStage] = useState<CubeStage>("F2L");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
@@ -87,6 +102,62 @@ const CaseLibrary: React.FC = () => {
    */
   const favorites = useLiveQuery(() => db.cubeCaseFavorites.toArray()) || [];
   const algorithmStats = useLiveQuery(() => db.algorithmStats.toArray()) || [];
+
+  /**
+   * Initialize state from URL parameters
+   * Sets the selected stage and group based on the current URL
+   */
+  useEffect(() => {
+    if (urlStage) {
+      const stageMap: Record<string, CubeStage> = {
+        'f2l': 'F2L',
+        'oll': 'OLL', 
+        'pll': 'PLL'
+      };
+      
+      const mappedStage = stageMap[urlStage.toLowerCase()];
+      if (mappedStage) {
+        setSelectedStage(mappedStage);
+      }
+    }
+    
+    if (urlGroup) {
+      setSelectedGroup(urlGroup);
+    } else {
+      setSelectedGroup("all");
+    }
+  }, [urlStage, urlGroup]);
+
+  /**
+   * Update URL when stage or group changes
+   * Maintains bookmarkable URLs for all sections
+   */
+  const updateURL = useCallback((stage: CubeStage, group: string) => {
+    const stageParam = stage.toLowerCase();
+    
+    if (group === "all") {
+      navigate(`/cases/${stageParam}`, { replace: true });
+    } else {
+      navigate(`/cases/${stageParam}/${group}`, { replace: true });
+    }
+  }, [navigate]);
+
+  /**
+   * Handle stage selection with URL update
+   */
+  const handleStageChange = useCallback((newStage: CubeStage) => {
+    setSelectedStage(newStage);
+    setSelectedGroup("all");
+    updateURL(newStage, "all");
+  }, [updateURL]);
+
+  /**
+   * Handle group selection with URL update
+   */
+  const handleGroupChange = useCallback((newGroup: string) => {
+    setSelectedGroup(newGroup);
+    updateURL(selectedStage, newGroup);
+  }, [selectedStage, updateURL]);
 
   /**
    * Global keyboard event handler for Cases page
@@ -618,7 +689,7 @@ const CaseLibrary: React.FC = () => {
         {/* Stage selection buttons */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
           <button
-            onClick={() => setSelectedStage("F2L")}
+            onClick={() => handleStageChange("F2L")}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               selectedStage === "F2L"
                 ? "bg-blue-600"
@@ -628,7 +699,7 @@ const CaseLibrary: React.FC = () => {
             F2L
           </button>
           <button
-            onClick={() => setSelectedStage("OLL")}
+            onClick={() => handleStageChange("OLL")}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               selectedStage === "OLL"
                 ? "bg-blue-600"
@@ -638,7 +709,7 @@ const CaseLibrary: React.FC = () => {
             OLL
           </button>
           <button
-            onClick={() => setSelectedStage("PLL")}
+            onClick={() => handleStageChange("PLL")}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               selectedStage === "PLL"
                 ? "bg-blue-600"
@@ -660,7 +731,7 @@ const CaseLibrary: React.FC = () => {
         {/* Group filtering buttons */}
         <div className="flex flex-wrap gap-2 mb-6">
           <button
-            onClick={() => setSelectedGroup("all")}
+            onClick={() => handleGroupChange("all")}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               selectedGroup === "all"
                 ? "bg-blue-600"
@@ -673,7 +744,7 @@ const CaseLibrary: React.FC = () => {
           {getGroups().map((group) => (
             <button
               key={group.id}
-              onClick={() => setSelectedGroup(group.id)}
+              onClick={() => handleGroupChange(group.id)}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 selectedGroup === group.id
                   ? "bg-blue-600"

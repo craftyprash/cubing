@@ -14,8 +14,10 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/train\" replace />} />
+          <Route index element={<Navigate to="/train" replace />} />
           <Route path="cases" element={<CaseLibrary />} />
+          <Route path="cases/:stage" element={<CaseLibrary />} />
+          <Route path="cases/:stage/:group" element={<CaseLibrary />} />
           <Route path="train" element={<Training />} />
         </Route>
       </Routes>
