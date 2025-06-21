@@ -15,6 +15,7 @@
  * - Visual cube state representations
  * - Mobile-optimized interface
  * - Bookmarkable URLs for each stage and group
+ * - Setup moves display for case understanding
  * 
  * URL Structure:
  * - /cases - Default view (F2L)
@@ -785,19 +786,34 @@ const CaseLibrary: React.FC = () => {
               >
                 {/* Case header with image and algorithm */}
                 <div className="flex items-start justify-between mb-4">
-                  <div>
+                  <div className="flex-1 mr-4">
                     <div className="mb-2">
                       <span className="text-lg font-bold">{caseNumber}</span>
                       <span className="text-lg"> - {groupName}</span>
                     </div>
-                    <p className="font-mono text-gray-400 text-sm break-words">
+                    
+                    {/* Setup moves section */}
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs text-gray-400 font-medium">Setup:</span>
+                      </div>
+                      <p className="font-mono text-gray-500 text-xs truncate">
+                          {cubeCase.setupMoves}
+                      </p>                      
+                    </div>
+                    
+                    {/* Current algorithm */}
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">Algorithm:</div>
+                      <p className="font-mono text-gray-300 text-sm break-words">
                       {activeAlgorithm?.moves}
                     </p>
+                    </div>
                   </div>
                   <img
                     src={imageUrl}
                     alt={cubeCase.name}
-                    className="w-24 h-24 rounded-lg p-2"
+                    className="w-24 h-24 rounded-lg p-2 flex-shrink-0"
                   />
                 </div>
 
