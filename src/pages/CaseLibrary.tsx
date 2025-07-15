@@ -758,7 +758,7 @@ const CaseLibrary: React.FC = () => {
         </div>
 
         {/* Case grid */}
-        <div className={ selectedStage === 'PLL' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}>
+        <div className={ selectedStage === 'PLL' || selectedStage === 'OLL' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'}>
           {filteredCases.map((cubeCase) => {
             const activeAlgorithm =
               activeTimerId === cubeCase.id && activeAlgorithmId
@@ -810,7 +810,7 @@ const CaseLibrary: React.FC = () => {
                     {/* Current algorithm */}
                     <div>
                       <div className="text-xs text-gray-400 mb-1">Algorithm:</div>
-                      <p className="font-mono text-gray-300 text-sm break-words">
+                      <p className="font-mono text-gray-300 text-md break-words">
                       {activeAlgorithm?.moves}
                     </p>
                     </div>
