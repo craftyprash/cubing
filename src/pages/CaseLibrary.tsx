@@ -789,41 +789,45 @@ const CaseLibrary: React.FC = () => {
                 className="bg-gray-800 rounded-xl p-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 tabIndex={-1}
               >
-                {/* Case header with image and algorithm */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1 mr-4">
-                    <div className="mb-2">
-                      <span className="text-lg font-bold">{caseIdentifier}</span>
-                      <span className="text-lg"> - {groupName}</span>
-                    </div>
-                    
-                    {/* Setup moves section */}
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs text-gray-400 font-medium">Setup:</span>
+                <div className="flex flex-col mb-4">
+                  {/* Case header with image and algorithm */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 mr-4">
+                      <div className="mb-2">
+                        <span className="text-lg font-bold">{caseIdentifier}</span>
+                        <span className="hidden md:inline text-lg"> - {groupName}</span>
                       </div>
-                      <p className="font-mono text-gray-500 text-xs truncate">
-                          {cubeCase.setupMoves}
-                      </p>                      
-                    </div>
                     
-                    {/* Current algorithm */}
-                    <div>
-                      <div className="text-xs text-gray-400 mb-1">Algorithm:</div>
-                      <p className="font-mono text-gray-300 text-md break-words">
+                      {/* Setup moves section */}
+                      <div className="mb-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-gray-400 font-medium">Setup:</span>
+                        </div>
+                        <p className="font-mono text-gray-500 text-xs break-words">
+                            {cubeCase.setupMoves}
+                        </p>                      
+                      </div>
+                    </div>
+
+                    <img
+                      src={imageUrl}
+                      alt={`${cubeCase.stage} Case ${caseIdentifier}`}
+                      // onError={(e) => {
+                      //   e.target.src = "/fallback-cube-image.png"; // Fallback if image fails
+                      // }}
+                      // alt={cubeCase.name}
+                      className="w-24 h-24 rounded-lg p-2 flex-shrink-0"
+                    />
+                  </div>
+                    
+                  {/* Current algorithm */}
+                  <div className="mt-3 w-full">
+                    <div className="text-xs text-gray-400 mb-1">Algorithm:</div>
+                    <p className="font-mono text-gray-300 text-md break-words">
                       {activeAlgorithm?.moves}
                     </p>
-                    </div>
                   </div>
-                  <img
-                    src={imageUrl}
-                    alt={`${cubeCase.stage} Case ${caseIdentifier}`}
-                    // onError={(e) => {
-                    //   e.target.src = "/fallback-cube-image.png"; // Fallback if image fails
-                    // }}
-                    // alt={cubeCase.name}
-                    className="w-24 h-24 rounded-lg p-2 flex-shrink-0"
-                  />
+                  
                 </div>
 
                 {/* Timer section (when active) */}
