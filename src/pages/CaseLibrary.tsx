@@ -768,13 +768,18 @@ const CaseLibrary: React.FC = () => {
                 : cubeCase.algorithms.find((alg) => alg.isMain) ||
                   cubeCase.algorithms[0];
 
-            const imageUrl = generateCaseImageUrl(
-              cubeCase.id,
-              cubeCase.stage.toLowerCase(),
-              cubeCase.setupMoves,
-            );
+            // Extract case identifier (either number or name)
+            const caseIdentifier = cubeCase.id.split("-")[1] || "";
 
-            const caseNumber = cubeCase.id.split("-")[1] || "";
+            // Conditionally choose the image source
+            const imageUrl =
+              selectedStage === "OLL" || selectedStage === "PLL" || selectedStage === "F2L"
+                ? `/${selectedStage.toLowerCase()}/${selectedStage.toLowerCase()}_case_${caseIdentifier}.png`
+                : generateCaseImageUrl(
+                cubeCase.id,
+                cubeCase.stage.toLowerCase(),
+                cubeCase.setupMoves); 
+            
             const groupName = getGroupName(cubeCase.group);
 
             return (
@@ -788,7 +793,7 @@ const CaseLibrary: React.FC = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 mr-4">
                     <div className="mb-2">
-                      <span className="text-lg font-bold">{caseNumber}</span>
+                      <span className="text-lg font-bold">{caseIdentifier}</span>
                       <span className="text-lg"> - {groupName}</span>
                     </div>
                     
@@ -812,7 +817,11 @@ const CaseLibrary: React.FC = () => {
                   </div>
                   <img
                     src={imageUrl}
-                    alt={cubeCase.name}
+                    alt={`${cubeCase.stage} Case ${caseIdentifier}`}
+                    // onError={(e) => {
+                    //   e.target.src = "/fallback-cube-image.png"; // Fallback if image fails
+                    // }}
+                    // alt={cubeCase.name}
                     className="w-24 h-24 rounded-lg p-2 flex-shrink-0"
                   />
                 </div>
